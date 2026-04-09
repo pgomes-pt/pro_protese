@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────────
+
+enum ClinicStatus {
+  NOVA
+  ATIVA
+}
+
+enum UserRole {
+  CLINICA
+  ADMIN
+  ESTAFETA
+}
+
+enum WorkType {
+  REPARACAO
+  ACRESCIMO_DENTE
+  ACRESCIMO_GANCHO
+  REBASE
+  CONTENCAO
+  CERA
+  MOLDEIRA
+  PROVA
+  PROVA_ESQUELETO
+  ESQUELETO_FLEXIVEL
+  TRABALHO_PRONTO
+  ORTODONTIA
+  SOLDADURA
+  ACRESCIMO_GANCHO_FUNDIDO
+}
+
+enum UrgencyLevel {
+  NORMAL
+  URGENTE
+  SUPER_URGENCIA_MANHA
+  SUPER_URGENCIA_TARDE
+}
+
+enum WorkStatus {
+  PEDIDO_FEITO
+  RECOLHIDO
+  EM_PRODUCAO
+  CONCLUIDO
+  ENTREGUE
+  DEVOLVIDO
+  EM_ESPERA
+}
+
+// ─── MODELOS ─────────────────────────────────────────
+
+model Clinic {
+  id          String       @id @default(cuid())
+  name        String
+  email       String       @unique
+  phone       String?
+  address     String?
+  city        String?
+  postalCode  String?
+  nif         String?      @unique
+  status      ClinicStatus @default(NOVA)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  users  User[]
+  orders Order[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      UserRole @default(CLINICA)
+  clinicId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clinic Clinic? @relation(fields: [clinicId], references: [id])
+  orders Order[]
+}
+
+model Order {
+  id           String       @id @default(cuid())
+  clinicId     String
+  userId       String
+  workType     WorkType
+  urgencyLevel UrgencyLevel @default(NORMAL)
+  status       WorkStatus   @default(PEDIDO_FEITO)
+
+  // Paciente
+  patientName String?
+  patientAge  Int?
+
+  // Datas
+  requestedAt        DateTime  @default(now())
+  collectionDate     DateTime?
+  minDeliveryDate    DateTime?
+  expectedDeliveryAt DateTime?
+  deliveredAt        DateTime?
+
+  // Devolução
+  returnedAt   DateTime?
+  returnReason String?
+
+  // Requisitos
+  notes               String?
+  requirementsMet     Boolean @default(false)
+  requirementsWarning Boolean @default(false)
+
+  // Aprovação de urgência
+  urgencyApproved   Boolean?
+  urgencyApprovedAt DateTime?
+  urgencyApprovedBy String?
+
+  // Preços
+  priceBase           Float?
+  priceUrgencySurcharge Float?
+  priceTotal          Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clinic        Clinic               @relation(fields: [clinicId], references: [id])
+  user          User                 @relation(fields: [userId], references: [id])
+  files         OrderFile[]
+  statusHistory OrderStatusHistory[]
+}
+
+model OrderFile {
+  id        String   @id @default(cuid())
+  orderId   String
+  fileName  String
+  fileUrl   String
+  fileType  String?
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+model OrderStatusHistory {
+  id        String     @id @default(cuid())
+  orderId   String
+  status    WorkStatus
+  changedAt DateTime   @default(now())
+  changedBy String?
+  notes     String?
+
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+model WorkTypeConfig {
+  id                  String   @id @default(cuid())
+  workType            WorkType @unique
+  deadlineDays        Int?
+  requiresOutsourcing Boolean  @default(false)
+  requirements        String[]
+  allowedForNew       Boolean  @default(false)
+}
+
+model UrgencyConfig {
+  id                  String   @id @default(cuid())
+  maxDailyUrgent      Int      @default(10)
+  maxDailySuperUrgent Int      @default(5)
+  surchargePercent    Float    @default(60)
+  surchargeMinValue   Float?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Holiday {
+  id   String   @id @default(cuid())
+  date DateTime @unique @db.Date
+  name String
+}
