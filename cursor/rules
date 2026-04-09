@@ -1,0 +1,84 @@
+# Dental Prosthetics Lab Management App
+
+## Project Overview
+This is a Next.js 14 app for managing dental prosthetics lab orders. It handles order creation, deadline calculation, urgency levels, pickup/delivery logistics, and clinic management.
+
+## Tech Stack
+- Next.js 14 (App Router, TypeScript)
+- PostgreSQL via Supabase
+- Prisma v5 ORM
+- Tailwind CSS
+- date-fns for date manipulation
+
+## Business Rules
+
+### Clinic Access Levels
+- NEW clinics: can only request REPARACAO, ACRESCIMO_DENTE, ACRESCIMO_GANCHO, REBASE, CONTENCAO
+- ACTIVE clinics: have access to all work types
+
+### Urgency Levels
+- NORMAL: pickup by 10:00, delivery same day (18:00-19:00 Mon/Wed/Fri, 17:00-17:30 Tue/Thu)
+- SUPER_URGENCIA_MANHA: pickup by 10:00, delivery by 13:00 same day
+- SUPER_URGENCIA_TARDE: pickup at 13:00, delivery end of day
+- Super urgency only available for: REPARACAO, ACRESCIMO_DENTE, ACRESCIMO_GANCHO, REBASE, CONTENCAO
+- All urgent orders require manual admin approval
+- There is a configurable daily limit for super urgent orders
+
+### Deadline Rules
+- All deadlines use working days only (no weekends, no Portuguese public holidays)
+- If order placed before or at 10:00 → day 0 is today
+- If order placed after 10:00 → day 0 is next working day
+- CERA, MOLDEIRA: 3 working days
+- PROVA: 3 working days
+- TRABALHO_PRONTO, ORTODONTIA: 5 working days
+- PROVA_ESQUELETO, ESQUELETO_FLEXIVEL, SOLDADURA, ACRESCIMO_GANCHO_FUNDIDO: no fixed deadline (outsourced)
+
+### Delivery Windows
+- Monday, Wednesday, Friday: 18:00 – 19:00
+- Tuesday, Thursday: 17:00 – 17:30
+
+### Order Status Flow
+PEDIDO_FEITO → RECOLHIDO → EM_PRODUCAO → CONCLUIDO → ENTREGUE
+Special states: DEVOLVIDO, EM_ESPERA (for incomplete requirements)
+
+### Work Types
+Core (available to all clinics):
+- REPARACAO, ACRESCIMO_DENTE, ACRESCIMO_GANCHO, REBASE, CONTENCAO
+
+Extended (active clinics only):
+- CERA, MOLDEIRA, PROVA, PROVA_ESQUELETO, ESQUELETO_FLEXIVEL
+- TRABALHO_PRONTO, ORTODONTIA, SOLDADURA, ACRESCIMO_GANCHO_FUNDIDO
+
+Outsourced (no fixed deadline):
+- PROVA_ESQUELETO, ESQUELETO_FLEXIVEL, SOLDADURA, ACRESCIMO_GANCHO_FUNDIDO
+
+## Database
+- Prisma schema is in prisma/schema.prisma
+- All models use cuid() for IDs
+- Soft deletes are not implemented yet
+
+## File Structure
+src/
+├── app/
+│   ├── (auth)/login/
+│   ├── (dashboard)/admin/
+│   ├── (dashboard)/clinica/
+│   └── api/
+├── lib/
+│   ├── prisma.ts
+│   ├── supabase.ts
+│   └── dates.ts
+├── components/
+│   ├── ui/
+│   └── orders/
+└── types/
+    └── index.ts
+
+## Code Conventions
+- Always use TypeScript with strict types
+- Use Prisma for all database operations, never raw SQL
+- Use date-fns for all date manipulation
+- All API routes go in src/app/api/
+- Use server components by default, client components only when necessary
+- Never expose sensitive data to the client
+- Always validate inputs on the server side
