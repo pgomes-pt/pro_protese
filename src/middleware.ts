@@ -34,7 +34,9 @@ function isProtectedPath(pathname: string): boolean {
 
 function isAllowedForRole(pathname: string, role: UserRole): boolean {
   if (role === "ADMIN") {
-    return pathname.startsWith("/admin");
+    return (
+      pathname.startsWith("/admin") || pathname.startsWith("/dashboard")
+    );
   }
   if (role === "CLINICA") {
     return pathname.startsWith("/dashboard/clinica");
@@ -69,6 +71,12 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname === "/" || pathname === "") {
+    if (user) {
+      const role = getRoleFromUser(user);
+      if (role === "ADMIN") {
+        return redirectWithCookies(request, response, "/admin");
+      }
+    }
     return response;
   }
 
