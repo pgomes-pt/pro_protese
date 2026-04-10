@@ -2,7 +2,7 @@ import { UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
-import { createSupabaseAdminClient } from "@/lib/supabase-admin";
+import { getSupabaseServiceClient } from "@/lib/supabase-admin";
 
 export const dynamic = "force-dynamic";
 
@@ -71,10 +71,8 @@ export async function POST(request: Request) {
     }
   }
 
-  let supabaseAdmin;
-  try {
-    supabaseAdmin = createSupabaseAdminClient();
-  } catch {
+  const supabaseAdmin = getSupabaseServiceClient();
+  if (!supabaseAdmin) {
     return jsonError(
       500,
       "Serviço de autenticação não configurado (SUPABASE_SERVICE_ROLE_KEY)."

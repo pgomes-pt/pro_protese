@@ -31,12 +31,13 @@ export async function GET() {
       dbUser.clinicId
         ? prisma.clinic.findUnique({
             where: { id: dbUser.clinicId },
-            select: { status: true },
+            select: { status: true, name: true },
           })
         : Promise.resolve(null),
     ]);
 
     const clinicStatus = clinic?.status ?? null;
+    const clinicName = clinic?.name ?? null;
 
     let filtered = configs;
     if (dbUser.role === UserRole.CLINICA && clinicStatus === ClinicStatus.NOVA) {
@@ -46,6 +47,7 @@ export async function GET() {
 
     return NextResponse.json({
       clinicStatus,
+      clinicName,
       workTypes: filtered.map((c) => ({
         id: c.id,
         workType: c.workType,

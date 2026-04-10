@@ -120,10 +120,13 @@ export async function PATCH(
     );
   }
 
-  const status =
-    body.status !== undefined ? parseWorkStatus(body.status) : undefined;
-  if (body.status !== undefined && status === null) {
-    return jsonError(400, "Estado inválido.");
+  let status: WorkStatus | undefined;
+  if (body.status !== undefined) {
+    const parsed = parseWorkStatus(body.status);
+    if (parsed === null) {
+      return jsonError(400, "Estado inválido.");
+    }
+    status = parsed;
   }
 
   let trimmedReturnReason: string | undefined;
@@ -153,9 +156,6 @@ export async function PATCH(
     }
     urgencyApproved = body.urgencyApproved;
   }
-
-  const statusChanged =
-    status !== undefined && status !== existing.status;
 
   const data: Prisma.OrderUpdateInput = {};
 
@@ -196,7 +196,7 @@ export async function PATCH(
         });
       }
 
-      if (statusChanged && status !== undefined) {
+      if (status !== undefined && status !== existing.status) {
         await tx.orderStatusHistory.create({
           data: {
             orderId: existing.id,
