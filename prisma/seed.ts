@@ -99,12 +99,15 @@ function buildPortugueseHolidays(
   ];
 }
 
+const LAB_CONFIG_SINGLETON_ID = "lab-config-singleton";
+
 const WORK_TYPE_CONFIGS: {
   workType: WorkType;
   deadlineDays: number | null;
   requiresOutsourcing: boolean;
   allowedForNew: boolean;
   requirements: string[];
+  estimatedHours: number;
 }[] = [
   {
     workType: WorkType.REPARACAO,
@@ -112,6 +115,7 @@ const WORK_TYPE_CONFIGS: {
     requiresOutsourcing: false,
     allowedForNew: true,
     requirements: ["Prótese", "Indicação clara da reparação"],
+    estimatedHours: 0.5,
   },
   {
     workType: WorkType.ACRESCIMO_DENTE,
@@ -119,6 +123,7 @@ const WORK_TYPE_CONFIGS: {
     requiresOutsourcing: false,
     allowedForNew: true,
     requirements: ["Prótese", "Dente ou cor indicada"],
+    estimatedHours: 0.5,
   },
   {
     workType: WorkType.ACRESCIMO_GANCHO,
@@ -126,6 +131,7 @@ const WORK_TYPE_CONFIGS: {
     requiresOutsourcing: false,
     allowedForNew: true,
     requirements: ["Prótese"],
+    estimatedHours: 0.5,
   },
   {
     workType: WorkType.REBASE,
@@ -133,6 +139,7 @@ const WORK_TYPE_CONFIGS: {
     requiresOutsourcing: false,
     allowedForNew: true,
     requirements: ["Prótese", "Moldeira ou modelo"],
+    estimatedHours: 1,
   },
   {
     workType: WorkType.CONTENCAO,
@@ -140,6 +147,7 @@ const WORK_TYPE_CONFIGS: {
     requiresOutsourcing: false,
     allowedForNew: true,
     requirements: ["Modelo em gesso"],
+    estimatedHours: 1,
   },
   {
     workType: WorkType.CERA,
@@ -151,6 +159,7 @@ const WORK_TYPE_CONFIGS: {
       "Modelo inferior",
       "Registo de mordida",
     ],
+    estimatedHours: 1.5,
   },
   {
     workType: WorkType.MOLDEIRA,
@@ -158,6 +167,7 @@ const WORK_TYPE_CONFIGS: {
     requiresOutsourcing: false,
     allowedForNew: false,
     requirements: ["Modelo em gesso"],
+    estimatedHours: 1.5,
   },
   {
     workType: WorkType.PROVA,
@@ -170,6 +180,7 @@ const WORK_TYPE_CONFIGS: {
       "Registo de mordida",
       "Dentes selecionados",
     ],
+    estimatedHours: 2,
   },
   {
     workType: WorkType.PROVA_ESQUELETO,
@@ -177,6 +188,7 @@ const WORK_TYPE_CONFIGS: {
     requiresOutsourcing: true,
     allowedForNew: false,
     requirements: ["Modelo em gesso", "Desenho do esqueleto"],
+    estimatedHours: 0,
   },
   {
     workType: WorkType.ESQUELETO_FLEXIVEL,
@@ -184,6 +196,7 @@ const WORK_TYPE_CONFIGS: {
     requiresOutsourcing: true,
     allowedForNew: false,
     requirements: ["Modelo em gesso", "Cor selecionada"],
+    estimatedHours: 0,
   },
   {
     workType: WorkType.TRABALHO_PRONTO,
@@ -191,6 +204,7 @@ const WORK_TYPE_CONFIGS: {
     requiresOutsourcing: false,
     allowedForNew: false,
     requirements: ["Prova aprovada", "Registo de cor", "Modelo final"],
+    estimatedHours: 3,
   },
   {
     workType: WorkType.ORTODONTIA,
@@ -198,6 +212,7 @@ const WORK_TYPE_CONFIGS: {
     requiresOutsourcing: false,
     allowedForNew: false,
     requirements: ["Modelos em gesso", "Ficha do paciente"],
+    estimatedHours: 3,
   },
   {
     workType: WorkType.SOLDADURA,
@@ -205,6 +220,7 @@ const WORK_TYPE_CONFIGS: {
     requiresOutsourcing: true,
     allowedForNew: false,
     requirements: ["Peça a soldar", "Indicação do trabalho"],
+    estimatedHours: 0,
   },
   {
     workType: WorkType.ACRESCIMO_GANCHO_FUNDIDO,
@@ -212,6 +228,7 @@ const WORK_TYPE_CONFIGS: {
     requiresOutsourcing: true,
     allowedForNew: false,
     requirements: ["Prótese esquelética", "Modelo em gesso"],
+    estimatedHours: 0,
   },
 ];
 
@@ -475,6 +492,14 @@ async function seedHolidays() {
   }
 }
 
+async function seedLabConfig() {
+  await prisma.labConfig.upsert({
+    where: { id: LAB_CONFIG_SINGLETON_ID },
+    create: { id: LAB_CONFIG_SINGLETON_ID, maxDailyHours: 7 },
+    update: { maxDailyHours: 7 },
+  });
+}
+
 async function seedWorkTypeConfigs() {
   for (const row of WORK_TYPE_CONFIGS) {
     await prisma.workTypeConfig.upsert({
@@ -485,12 +510,14 @@ async function seedWorkTypeConfigs() {
         requiresOutsourcing: row.requiresOutsourcing,
         allowedForNew: row.allowedForNew,
         requirements: row.requirements,
+        estimatedHours: row.estimatedHours,
       },
       update: {
         deadlineDays: row.deadlineDays,
         requiresOutsourcing: row.requiresOutsourcing,
         allowedForNew: row.allowedForNew,
         requirements: row.requirements,
+        estimatedHours: row.estimatedHours,
       },
     });
   }
@@ -682,6 +709,8 @@ async function main() {
   try {
     console.log("Seeding holidays…");
     await seedHolidays();
+    console.log("Seeding LabConfig…");
+    await seedLabConfig();
     console.log("Seeding WorkTypeConfig…");
     await seedWorkTypeConfigs();
     console.log("Seeding UrgencyConfig…");

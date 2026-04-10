@@ -153,3 +153,12 @@ export function getExpectedDeliveryWindow(deliveryDate: Date): string {
   }
   return WINDOW_MWF;
 }
+
+/** True when adding `requiredHours` to current `usedHours` does not exceed `maxHours`. */
+export function isCapacityAvailable(
+  usedHours: number,
+  maxHours: number,
+  requiredHours: number
+): boolean {
+  return usedHours + requiredHours <= maxHours;
+}
