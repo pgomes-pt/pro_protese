@@ -38,6 +38,7 @@ type OrderRow = {
 type UrgencyAvailability = {
   urgent: { limit: number; used: number; available: number };
   superUrgent: { limit: number; used: number; available: number };
+  pendingUrgencyApprovals?: number;
 };
 
 const STATUS_BADGE: Record<WorkStatus, string> = {
@@ -70,7 +71,7 @@ function formatDateTime(iso: string): string {
 
 function StatCardSkeleton() {
   return (
-    <div className="animate-pulse rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+    <div className="card-stat-skeleton animate-pulse">
       <div className="h-3 w-28 rounded bg-zinc-200" />
       <div className="mt-3 h-8 w-16 rounded bg-zinc-200" />
     </div>
@@ -79,9 +80,9 @@ function StatCardSkeleton() {
 
 function TableSkeleton() {
   return (
-    <div className="animate-pulse overflow-x-auto rounded-xl border border-zinc-200 bg-white">
-      <div className="min-w-[1040px] divide-y divide-zinc-100">
-        <div className="flex gap-4 bg-zinc-50 px-4 py-3">
+    <div className="card-table-wrap animate-pulse">
+      <div className="min-w-[1040px] divide-y divide-slate-100">
+        <div className="flex gap-4 bg-slate-50 px-4 py-3">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="h-3 flex-1 rounded bg-zinc-200" />
           ))}
@@ -147,10 +148,10 @@ function ModalBackdrop({
         aria-label="Fechar"
         onClick={onClose}
       />
-      <div className="relative z-10 w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 shadow-lg">
+      <div className="relative z-10 w-full max-w-md rounded-xl border border-slate-200/80 bg-white p-6 shadow-xl shadow-slate-900/10">
         <h2
           id="modal-title"
-          className="text-lg font-semibold text-zinc-900"
+          className="font-heading text-lg font-semibold text-slate-900"
         >
           {title}
         </h2>
@@ -442,23 +443,17 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <header className="border-b border-zinc-200 bg-white">
+    <div className="dashboard-bg">
+      <header className="dashboard-header">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+            <h1 className="font-heading text-2xl font-semibold tracking-tight text-slate-900">
               Painel de Administração
             </h1>
-            <p className="mt-1 text-sm text-zinc-600">
+            <p className="mt-1 text-sm text-slate-600">
               Pedidos, urgências e capacidade diária
             </p>
           </div>
-          <a
-            href="/api/auth/logout"
-            className="inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50"
-          >
-            Terminar sessão
-          </a>
         </div>
       </header>
 
@@ -492,40 +487,40 @@ export default function AdminDashboardPage() {
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-                  <p className="text-sm font-medium text-zinc-500">
+                <div className="card-stat">
+                  <p className="text-sm font-medium text-slate-500">
                     Total de pedidos hoje
                   </p>
-                  <p className="mt-2 text-3xl font-semibold tabular-nums text-zinc-900">
+                  <p className="mt-2 text-3xl font-semibold tabular-nums text-slate-900">
                     {stats.totalToday}
                   </p>
                 </div>
-                <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-                  <p className="text-sm font-medium text-zinc-500">
+                <div className="card-stat">
+                  <p className="text-sm font-medium text-slate-500">
                     Urgências por aprovar
                   </p>
                   <p className="mt-2 text-3xl font-semibold tabular-nums text-red-700">
                     {stats.pendingUrgencyApprovals}
                   </p>
                 </div>
-                <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-                  <p className="text-sm font-medium text-zinc-500">
+                <div className="card-stat">
+                  <p className="text-sm font-medium text-slate-500">
                     Em produção
                   </p>
                   <p className="mt-2 text-3xl font-semibold tabular-nums text-amber-700">
                     {stats.inProduction}
                   </p>
                 </div>
-                <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-                  <p className="text-sm font-medium text-zinc-500">
+                <div className="card-stat">
+                  <p className="text-sm font-medium text-slate-500">
                     Recolha prevista hoje
                   </p>
                   <p className="mt-2 text-3xl font-semibold tabular-nums text-sky-800">
                     {stats.collectToday}
                   </p>
                 </div>
-                <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-                  <p className="text-sm font-medium text-zinc-500">
+                <div className="card-stat">
+                  <p className="text-sm font-medium text-slate-500">
                     Entrega prevista hoje
                   </p>
                   <p className="mt-2 text-3xl font-semibold tabular-nums text-green-800">
@@ -536,21 +531,18 @@ export default function AdminDashboardPage() {
             )}
 
             {!loading && pendingUrgencyOrders.length > 0 && (
-              <section className="rounded-xl border border-amber-200 bg-amber-50/50 p-5 shadow-sm">
-                <h2 className="text-lg font-semibold text-zinc-900">
+              <section className="card-alert-amber">
+                <h2 className="font-heading text-lg font-semibold text-slate-900">
                   Aprovação de urgências
                 </h2>
-                <p className="mt-1 text-sm text-zinc-600">
+                <p className="mt-1 text-sm text-slate-600">
                   Pedidos à espera de decisão sobre o nível de urgência.
                 </p>
                 <ul className="mt-4 grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
                   {pendingUrgencyOrders.map((o) => {
                     const busy = urgencyActionId === o.id;
                     return (
-                      <li
-                        key={o.id}
-                        className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm"
-                      >
+                      <li key={o.id} className="card-pending-item">
                         <div className="flex flex-col gap-2 text-sm">
                           <p className="font-semibold text-zinc-900">
                             {o.clinic.name}
@@ -604,10 +596,10 @@ export default function AdminDashboardPage() {
             )}
 
             <section>
-              <h2 className="text-lg font-semibold text-zinc-900">
+              <h2 className="font-heading text-lg font-semibold text-slate-900">
                 Todos os pedidos
               </h2>
-              <p className="mt-1 text-sm text-zinc-600">
+              <p className="mt-1 text-sm text-slate-600">
                 Filtre por clínica, paciente, estado e tipo de trabalho.
               </p>
 
@@ -625,7 +617,7 @@ export default function AdminDashboardPage() {
                     placeholder="Nome da clínica…"
                     value={filterClinic}
                     onChange={(e) => setFilterClinic(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
+                    className="input-dashboard mt-1 w-full"
                   />
                 </div>
                 <div className="min-w-[200px] flex-1">
@@ -641,7 +633,7 @@ export default function AdminDashboardPage() {
                     placeholder="Pesquisar por nome…"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
+                    className="input-dashboard mt-1 w-full"
                   />
                 </div>
                 <div className="w-full min-w-[160px] sm:w-auto">
@@ -657,7 +649,7 @@ export default function AdminDashboardPage() {
                     onChange={(e) =>
                       setFilterStatus((e.target.value as WorkStatus) || "")
                     }
-                    className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
+                    className="input-dashboard mt-1 w-full"
                   >
                     <option value="">Todos</option>
                     {ALL_STATUSES.map((s) => (
@@ -680,7 +672,7 @@ export default function AdminDashboardPage() {
                     onChange={(e) =>
                       setFilterWorkType((e.target.value as WorkType) || "")
                     }
-                    className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
+                    className="input-dashboard mt-1 w-full"
                   >
                     <option value="">Todos</option>
                     {ALL_WORK_TYPES.map((w) => (
@@ -703,7 +695,7 @@ export default function AdminDashboardPage() {
                     onChange={(e) =>
                       setFilterUrgency((e.target.value as UrgencyLevel) || "")
                     }
-                    className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
+                    className="input-dashboard mt-1 w-full"
                   >
                     <option value="">Todas</option>
                     {ALL_URGENCIES.map((u) => (
@@ -720,24 +712,24 @@ export default function AdminDashboardPage() {
                   <TableSkeleton />
                 </div>
               ) : orders.length === 0 && error ? (
-                <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-10 text-center text-sm text-zinc-600">
+                <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-600">
                   Não foi possível mostrar a lista. Utilize &quot;Tentar
                   novamente&quot; acima.
                 </div>
               ) : orders.length === 0 ? (
-                <div className="mt-8 rounded-xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center">
-                  <p className="text-lg font-medium text-zinc-900">
+                <div className="card-panel-soft mt-8 border-dashed border-slate-300 px-6 py-16 text-center">
+                  <p className="font-heading text-lg font-medium text-slate-900">
                     Sem pedidos no sistema
                   </p>
-                  <p className="mx-auto mt-2 max-w-md text-sm text-zinc-600">
+                  <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
                     Quando as clínicas criarem pedidos, aparecerão aqui.
                   </p>
                 </div>
               ) : (
-                <div className="mt-6 overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm">
+                <div className="card-table-wrap mt-6">
                   <table className="min-w-[1040px] w-full text-left text-sm">
                     <thead>
-                      <tr className="border-b border-zinc-200 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-600">
+                      <tr className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-600">
                         <th className="px-4 py-3">Clínica</th>
                         <th className="px-4 py-3">Paciente</th>
                         <th className="px-4 py-3">Tipo de trabalho</th>
@@ -748,7 +740,7 @@ export default function AdminDashboardPage() {
                         <th className="px-4 py-3 text-right">Ações</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-100">
+                    <tbody className="divide-y divide-slate-100">
                       {filteredOrders.length === 0 ? (
                         <tr>
                           <td
@@ -798,7 +790,7 @@ export default function AdminDashboardPage() {
                                     onChange={(e) =>
                                       onStatusSelectChange(o, e.target.value)
                                     }
-                                    className="max-w-[220px] rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-xs font-medium text-zinc-800 shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/30 disabled:opacity-50"
+                                    className="max-w-[220px] rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-800 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 disabled:opacity-50"
                                   >
                                     {ALL_STATUSES.map((s) => (
                                       <option key={s} value={s}>
@@ -809,7 +801,7 @@ export default function AdminDashboardPage() {
                                 </div>
                                 <Link
                                   href={`/admin/pedidos/${o.id}`}
-                                  className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-800 shadow-sm transition hover:bg-zinc-50"
+                                  className="inline-flex rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 shadow-sm transition hover:border-blue-200 hover:bg-blue-50/80"
                                 >
                                   Ver detalhes
                                 </Link>
@@ -827,15 +819,15 @@ export default function AdminDashboardPage() {
 
           <aside className="w-full shrink-0 lg:w-72">
             {loading ? (
-              <div className="animate-pulse rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+              <div className="card-stat-skeleton animate-pulse">
                 <div className="h-4 w-40 rounded bg-zinc-200" />
                 <div className="mt-4 h-4 w-full rounded bg-zinc-100" />
                 <div className="mt-2 h-4 w-full rounded bg-zinc-100" />
                 <div className="mt-4 h-9 w-full rounded bg-zinc-200" />
               </div>
             ) : urgencyAvail ? (
-              <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-semibold text-zinc-900">
+              <div className="card-panel-soft">
+                <h3 className="font-heading text-sm font-semibold text-slate-900">
                   Capacidade de urgências (hoje)
                 </h3>
                 <p className="mt-3 text-sm text-zinc-700">
@@ -854,13 +846,13 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setConfigModalOpen(true)}
-                  className="mt-4 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
+                  className="mt-4 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-100"
                 >
                   Editar limites
                 </button>
               </div>
             ) : (
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 text-sm text-zinc-600">
+              <div className="card-panel-soft border-slate-200 bg-slate-50 text-sm text-slate-600">
                 Não foi possível carregar a capacidade de urgências.
               </div>
             )}
@@ -912,7 +904,7 @@ export default function AdminDashboardPage() {
             value={devolvidoReason}
             onChange={(e) => setDevolvidoReason(e.target.value)}
             rows={3}
-            className="mt-3 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
+            className="input-dashboard mt-3 w-full"
             placeholder="Motivo…"
           />
           <div className="mt-6 flex flex-wrap justify-end gap-2">
@@ -922,7 +914,7 @@ export default function AdminDashboardPage() {
                 setDevolvidoModalOrderId(null);
                 setDevolvidoReason("");
               }}
-              className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
             >
               Cancelar
             </button>
@@ -930,7 +922,7 @@ export default function AdminDashboardPage() {
               type="button"
               disabled={statusPatchId === devolvidoModalOrderId}
               onClick={() => void submitDevolvido()}
-              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
               Confirmar devolução
             </button>
@@ -966,7 +958,7 @@ export default function AdminDashboardPage() {
                 min={0}
                 value={configMaxUrgent}
                 onChange={(e) => setConfigMaxUrgent(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
+                className="input-dashboard mt-1 w-full"
               />
             </div>
             <div>
@@ -982,7 +974,7 @@ export default function AdminDashboardPage() {
                 min={0}
                 value={configMaxSuper}
                 onChange={(e) => setConfigMaxSuper(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
+                className="input-dashboard mt-1 w-full"
               />
             </div>
           </div>
@@ -991,7 +983,7 @@ export default function AdminDashboardPage() {
               type="button"
               disabled={configSaving}
               onClick={() => setConfigModalOpen(false)}
-              className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-50"
+              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50"
             >
               Cancelar
             </button>
@@ -999,7 +991,7 @@ export default function AdminDashboardPage() {
               type="button"
               disabled={configSaving}
               onClick={() => void saveUrgencyConfig()}
-              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {configSaving ? "A guardar…" : "Guardar"}
             </button>

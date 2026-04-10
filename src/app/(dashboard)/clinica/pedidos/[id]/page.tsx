@@ -10,9 +10,9 @@ import {
 } from "@/components/order-detail-shared";
 
 const btnSecondary =
-  "inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 shadow-sm transition hover:bg-zinc-50";
+  "inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-800 shadow-sm transition hover:border-blue-200 hover:bg-blue-50/80";
 const btnPrimary =
-  "inline-flex items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800";
+  "inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700";
 
 export default function ClinicaPedidoDetalhePage() {
   const params = useParams();
@@ -56,7 +56,7 @@ export default function ClinicaPedidoDetalhePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-50">
+      <div className="dashboard-bg">
         <OrderDetailSkeleton />
       </div>
     );
@@ -64,8 +64,8 @@ export default function ClinicaPedidoDetalhePage() {
 
   if (error || !order) {
     return (
-      <div className="min-h-screen bg-zinc-50 px-4 py-16">
-        <div className="mx-auto max-w-md rounded-xl border border-zinc-200 bg-white p-8 text-center shadow-sm">
+      <div className="dashboard-bg px-4 py-16">
+        <div className="card-panel-soft mx-auto max-w-md p-8 text-center">
           <p className="text-sm text-zinc-800">
             {error ?? "Não foi possível mostrar este pedido."}
           </p>
@@ -84,7 +84,7 @@ export default function ClinicaPedidoDetalhePage() {
     order.status === "EM_ESPERA" || order.status === "DEVOLVIDO";
 
   return (
-    <div className="min-h-screen bg-zinc-50">
+    <div className="dashboard-bg">
       <OrderDetailBody
         order={order}
         footerActions={

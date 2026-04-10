@@ -2,25 +2,104 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0f172a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-dm-sans), var(--font-inter), ui-sans-serif,
+    system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes badge-pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.05);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in-up 0.45s ease-out forwards;
+}
+
+.animate-badge-pulse {
+  animation: badge-pulse-soft 1.6s ease-in-out infinite;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+@layer components {
+  .dashboard-bg {
+    @apply min-h-screen bg-slate-50;
+  }
+
+  .dashboard-header {
+    @apply border-b border-slate-200/80 bg-white/95 shadow-sm shadow-slate-900/5 backdrop-blur-sm;
+  }
+
+  /* Metric tiles — subtle lift on hover */
+  .card-stat {
+    @apply rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-900/5 transition duration-200 will-change-transform hover:-translate-y-0.5 hover:shadow-md;
+  }
+
+  .card-stat-skeleton {
+    @apply rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-900/5;
+  }
+
+  /* Tables, side panels, static content blocks */
+  .card-panel {
+    @apply rounded-xl border border-slate-200/80 bg-white shadow-md;
+  }
+
+  .card-panel-soft {
+    @apply rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-900/5;
+  }
+
+  .card-table-wrap {
+    @apply overflow-x-auto rounded-xl border border-slate-200/80 bg-white shadow-md;
+  }
+
+  /* Form sections (novo pedido, etc.) */
+  .card-form-section {
+    @apply space-y-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-900/5;
+  }
+
+  /* Inline urgency approval cards */
+  .card-pending-item {
+    @apply rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-900/5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md;
+  }
+
+  .card-alert-amber {
+    @apply rounded-xl border border-amber-200/80 bg-amber-50/90 p-5 shadow-sm shadow-amber-900/5;
+  }
+
+  .input-dashboard {
+    @apply rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25;
+  }
 }

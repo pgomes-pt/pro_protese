@@ -68,20 +68,20 @@ export default function ClinicaPerfilPage() {
   }, [load]);
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <header className="border-b border-zinc-200 bg-white">
+    <div className="dashboard-bg">
+      <header className="dashboard-header">
         <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+            <h1 className="font-heading text-2xl font-semibold tracking-tight text-slate-900">
               Perfil da clínica
             </h1>
-            <p className="mt-1 text-sm text-zinc-600">
+            <p className="mt-1 text-sm text-slate-600">
               Dados da sua conta (consulta apenas)
             </p>
           </div>
           <Link
             href="/clinica"
-            className="inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50"
+            className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50/80"
           >
             ← Voltar
           </Link>
@@ -106,7 +106,7 @@ export default function ClinicaPerfilPage() {
         )}
 
         {loading ? (
-          <div className="animate-pulse rounded-xl border border-zinc-200 bg-white p-8 shadow-sm">
+          <div className="card-stat-skeleton animate-pulse p-8">
             <div className="h-5 w-48 rounded bg-zinc-200" />
             <div className="mt-6 space-y-3">
               <div className="h-4 w-full rounded bg-zinc-100" />
@@ -157,8 +157,8 @@ export default function ClinicaPerfilPage() {
               </dl>
             </section>
 
-            <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+            <section className="card-panel-soft p-6">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
                 Morada
               </h2>
               <dl className="mt-4 space-y-3 text-sm">
@@ -183,8 +183,8 @@ export default function ClinicaPerfilPage() {
               </dl>
             </section>
 
-            <section className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50/80 p-6">
-              <h2 className="text-sm font-semibold text-zinc-900">
+            <section className="card-panel-soft border-dashed border-slate-300 bg-slate-50/90 p-6">
+              <h2 className="text-sm font-semibold text-slate-900">
                 Contactar administrador
               </h2>
               <p className="mt-2 text-sm text-zinc-700">

@@ -73,7 +73,7 @@ function formatCreatedAt(iso: string): string {
 
 function StatCardSkeleton() {
   return (
-    <div className="animate-pulse rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+    <div className="card-stat-skeleton animate-pulse">
       <div className="h-3 w-24 rounded bg-zinc-200" />
       <div className="mt-3 h-8 w-16 rounded bg-zinc-200" />
     </div>
@@ -82,9 +82,9 @@ function StatCardSkeleton() {
 
 function TableSkeleton() {
   return (
-    <div className="animate-pulse overflow-x-auto rounded-xl border border-zinc-200 bg-white">
-      <div className="min-w-[900px] divide-y divide-zinc-100">
-        <div className="flex gap-4 bg-zinc-50 px-4 py-3">
+    <div className="card-table-wrap animate-pulse">
+      <div className="min-w-[900px] divide-y divide-slate-100">
+        <div className="flex gap-4 bg-slate-50 px-4 py-3">
           {Array.from({ length: 7 }).map((_, i) => (
             <div key={i} className="h-3 flex-1 rounded bg-zinc-200" />
           ))}
@@ -92,7 +92,7 @@ function TableSkeleton() {
         {Array.from({ length: 5 }).map((_, r) => (
           <div key={r} className="flex gap-4 px-4 py-4">
             {Array.from({ length: 7 }).map((_, c) => (
-              <div key={c} className="h-4 flex-1 rounded bg-zinc-100" />
+              <div key={c} className="h-4 flex-1 rounded bg-slate-100" />
             ))}
           </div>
         ))}
@@ -215,34 +215,28 @@ export default function ClinicaDashboardPage() {
   }, [orders, search, filterStatus, filterWorkType, filterUrgency]);
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <header className="border-b border-zinc-200 bg-white">
+    <div className="dashboard-bg">
+      <header className="dashboard-header">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+            <h1 className="font-heading text-2xl font-semibold tracking-tight text-slate-900">
               {loading ? (
                 <span className="inline-block h-8 w-48 max-w-full animate-pulse rounded bg-zinc-200" />
               ) : (
                 displayClinicName
               )}
             </h1>
-            <p className="mt-1 text-sm text-zinc-600">
+            <p className="mt-1 text-sm text-slate-600">
               Painel de pedidos e estatísticas
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/clinica/novo-pedido"
-              className="inline-flex items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800"
+              className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
             >
               Novo Pedido
             </Link>
-            <a
-              href="/api/auth/logout"
-              className="inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50"
-            >
-              Terminar sessão
-            </a>
           </div>
         </div>
       </header>
@@ -272,32 +266,32 @@ export default function ClinicaDashboardPage() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium text-zinc-500">
+            <div className="card-stat">
+              <p className="text-sm font-medium text-slate-500">
                 Total de pedidos
               </p>
-              <p className="mt-2 text-3xl font-semibold tabular-nums text-zinc-900">
+              <p className="mt-2 text-3xl font-semibold tabular-nums text-slate-900">
                 {stats.total}
               </p>
             </div>
-            <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium text-zinc-500">
+            <div className="card-stat">
+              <p className="text-sm font-medium text-slate-500">
                 Em produção
               </p>
               <p className="mt-2 text-3xl font-semibold tabular-nums text-amber-700">
                 {stats.inProduction}
               </p>
             </div>
-            <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium text-zinc-500">
+            <div className="card-stat">
+              <p className="text-sm font-medium text-slate-500">
                 Entregues hoje
               </p>
               <p className="mt-2 text-3xl font-semibold tabular-nums text-green-800">
                 {stats.deliveredToday}
               </p>
             </div>
-            <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium text-zinc-500">
+            <div className="card-stat">
+              <p className="text-sm font-medium text-slate-500">
                 Urgências por aprovar
               </p>
               <p className="mt-2 text-3xl font-semibold tabular-nums text-red-700">
@@ -308,8 +302,10 @@ export default function ClinicaDashboardPage() {
         )}
 
         <section className="mt-10">
-          <h2 className="text-lg font-semibold text-zinc-900">Pedidos</h2>
-          <p className="mt-1 text-sm text-zinc-600">
+          <h2 className="font-heading text-lg font-semibold text-slate-900">
+            Pedidos
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
             Filtre e consulte o estado dos seus pedidos.
           </p>
 
@@ -327,7 +323,7 @@ export default function ClinicaDashboardPage() {
                 placeholder="Pesquisar por nome…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
+                className="input-dashboard mt-1 w-full"
               />
             </div>
             <div className="w-full min-w-[160px] sm:w-auto">
@@ -343,7 +339,7 @@ export default function ClinicaDashboardPage() {
                 onChange={(e) =>
                   setFilterStatus((e.target.value as WorkStatus) || "")
                 }
-                className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
+                className="input-dashboard mt-1 w-full"
               >
                 <option value="">Todos</option>
                 {ALL_STATUSES.map((s) => (
@@ -366,7 +362,7 @@ export default function ClinicaDashboardPage() {
                 onChange={(e) =>
                   setFilterWorkType((e.target.value as WorkType) || "")
                 }
-                className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
+                className="input-dashboard mt-1 w-full"
               >
                 <option value="">Todos</option>
                 {ALL_WORK_TYPES.map((w) => (
@@ -389,7 +385,7 @@ export default function ClinicaDashboardPage() {
                 onChange={(e) =>
                   setFilterUrgency((e.target.value as UrgencyLevel) || "")
                 }
-                className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
+                className="input-dashboard mt-1 w-full"
               >
                 <option value="">Todas</option>
                 {ALL_URGENCIES.map((u) => (
@@ -406,31 +402,31 @@ export default function ClinicaDashboardPage() {
               <TableSkeleton />
             </div>
           ) : error && orders.length === 0 ? (
-            <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-10 text-center text-sm text-zinc-600">
+            <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-600">
               Não foi possível mostrar a lista. Utilize &quot;Tentar novamente&quot;
               acima.
             </div>
           ) : orders.length === 0 ? (
-            <div className="mt-8 rounded-xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center">
-              <p className="text-lg font-medium text-zinc-900">
+            <div className="card-panel-soft mt-8 border-dashed border-slate-300 px-6 py-16 text-center">
+              <p className="font-heading text-lg font-medium text-slate-900">
                 Ainda não tem pedidos
               </p>
-              <p className="mx-auto mt-2 max-w-md text-sm text-zinc-600">
+              <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
                 Quando criar o primeiro pedido, aparecerá aqui com o estado, datas
                 e urgência.
               </p>
               <Link
                 href="/clinica/novo-pedido"
-                className="mt-6 inline-flex items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800"
+                className="mt-6 inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
               >
                 Criar primeiro pedido
               </Link>
             </div>
           ) : (
-            <div className="mt-6 overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm">
+            <div className="card-table-wrap mt-6">
               <table className="min-w-[920px] w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-zinc-200 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-600">
+                  <tr className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-600">
                     <th className="px-4 py-3">Paciente</th>
                     <th className="px-4 py-3">Tipo de trabalho</th>
                     <th className="px-4 py-3">Urgência</th>
@@ -440,7 +436,7 @@ export default function ClinicaDashboardPage() {
                     <th className="px-4 py-3 text-right">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-100">
+                <tbody className="divide-y divide-slate-100">
                   {filteredOrders.length === 0 ? (
                     <tr>
                       <td
@@ -454,12 +450,12 @@ export default function ClinicaDashboardPage() {
                     filteredOrders.map((o) => (
                       <tr
                         key={o.id}
-                        className="transition hover:bg-zinc-50/80"
+                        className="transition hover:bg-slate-50/90"
                       >
-                        <td className="px-4 py-3 font-medium text-zinc-900">
+                        <td className="px-4 py-3 font-medium text-slate-900">
                           {o.patientName?.trim() || "—"}
                         </td>
-                        <td className="px-4 py-3 text-zinc-700">
+                        <td className="px-4 py-3 text-slate-700">
                           {WORK_TYPE_LABELS[o.workType]}
                         </td>
                         <td className="px-4 py-3">
@@ -477,7 +473,7 @@ export default function ClinicaDashboardPage() {
                         <td className="px-4 py-3 text-right">
                           <Link
                             href={`/clinica/pedidos/${o.id}`}
-                            className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-800 shadow-sm transition hover:bg-zinc-50"
+                            className="inline-flex rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 shadow-sm transition hover:border-blue-200 hover:bg-blue-50/80"
                           >
                             Ver detalhes
                           </Link>

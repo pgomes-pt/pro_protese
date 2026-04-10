@@ -55,6 +55,16 @@ export async function GET() {
 
     const superAvailable = Math.max(0, superLimit - superUsed);
 
+    let pendingUrgencyApprovals = 0;
+    if (dbUser.role === UserRole.ADMIN) {
+      pendingUrgencyApprovals = await prisma.order.count({
+        where: {
+          urgencyApproved: false,
+          urgencyLevel: { not: "NORMAL" },
+        },
+      });
+    }
+
     return NextResponse.json({
       urgent: {
         limit: urgentLimit,
@@ -72,6 +82,7 @@ export async function GET() {
       superUrgenciaTarde: {
         available: before13 && superAvailable > 0,
       },
+      pendingUrgencyApprovals,
     });
   } catch (e) {
     console.error(e);

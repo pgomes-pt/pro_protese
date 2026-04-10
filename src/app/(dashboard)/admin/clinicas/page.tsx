@@ -82,7 +82,7 @@ function ModalBackdrop({
         onClick={onClose}
       />
       <div
-        className={`relative z-10 w-full max-h-[90vh] overflow-y-auto rounded-xl border border-zinc-200 bg-white p-6 shadow-lg ${
+        className={`relative z-10 w-full max-h-[90vh] overflow-y-auto rounded-xl border border-slate-200/80 bg-white p-6 shadow-xl shadow-slate-900/10 ${
           wide ? "max-w-xl" : "max-w-md"
         }`}
       >
@@ -98,8 +98,7 @@ function ModalBackdrop({
   );
 }
 
-const inputClass =
-  "mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/30";
+const inputClass = "input-dashboard mt-1 w-full";
 
 const labelClass = "block text-xs font-medium text-zinc-600";
 
@@ -267,21 +266,21 @@ export default function AdminClinicasPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <header className="border-b border-zinc-200 bg-white">
+    <div className="dashboard-bg">
+      <header className="dashboard-header">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+            <h1 className="font-heading text-2xl font-semibold tracking-tight text-slate-900">
               Clínicas
             </h1>
-            <p className="mt-1 text-sm text-zinc-600">
+            <p className="mt-1 text-sm text-slate-600">
               Criar e gerir clínicas registadas
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/admin"
-              className="inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50"
+              className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50/80"
             >
               Painel admin
             </Link>
@@ -291,16 +290,10 @@ export default function AdminClinicasPage() {
                 setCreateError(null);
                 setCreateOpen(true);
               }}
-              className="inline-flex items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800"
+              className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
             >
               Nova Clínica
             </button>
-            <a
-              href="/api/auth/logout"
-              className="inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50"
-            >
-              Terminar sessão
-            </a>
           </div>
         </div>
       </header>
@@ -337,14 +330,14 @@ export default function AdminClinicasPage() {
         </div>
 
         {loading ? (
-          <div className="animate-pulse rounded-xl border border-zinc-200 bg-white p-10 text-center text-sm text-zinc-500">
+          <div className="card-stat-skeleton animate-pulse p-10 text-center text-sm text-slate-500">
             A carregar…
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm">
+          <div className="card-table-wrap">
             <table className="min-w-[880px] w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-zinc-200 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-600">
+                <tr className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-600">
                   <th className="px-4 py-3">Nome</th>
                   <th className="px-4 py-3">NIF</th>
                   <th className="px-4 py-3">Estado</th>
@@ -367,8 +360,8 @@ export default function AdminClinicasPage() {
                   </tr>
                 ) : (
                   filtered.map((c) => (
-                    <tr key={c.id} className="transition hover:bg-zinc-50/80">
-                      <td className="px-4 py-3 font-medium text-zinc-900">
+                    <tr key={c.id} className="transition hover:bg-slate-50/90">
+                      <td className="px-4 py-3 font-medium text-slate-900">
                         {c.name}
                       </td>
                       <td className="px-4 py-3 tabular-nums text-zinc-700">
@@ -387,7 +380,7 @@ export default function AdminClinicasPage() {
                         <button
                           type="button"
                           onClick={() => setEditRow(c)}
-                          className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-800 shadow-sm transition hover:bg-zinc-50"
+                          className="inline-flex rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 shadow-sm transition hover:border-blue-200 hover:bg-blue-50/80"
                         >
                           Editar
                         </button>

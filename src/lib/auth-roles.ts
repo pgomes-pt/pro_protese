@@ -15,7 +15,7 @@ export function dashboardPathForRole(role: UserRole): string {
     case "ADMIN":
       return "/admin";
     case "CLINICA":
-      return "/dashboard/clinica";
+      return "/clinica";
     case "ESTAFETA":
       return "/dashboard/estafeta";
   }

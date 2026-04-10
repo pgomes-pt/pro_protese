@@ -130,7 +130,7 @@ export function formatHistoryAt(iso: string): string {
 }
 
 function cardClass() {
-  return "rounded-xl border border-zinc-200 bg-white p-5 shadow-sm";
+  return "card-panel-soft";
 }
 
 function FileTypeGlyph({ fileName, fileType }: { fileName: string; fileType: string | null }) {
@@ -181,7 +181,7 @@ export function OrderDetailSkeleton() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="animate-pulse space-y-6">
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className="card-stat-skeleton p-6">
           <div className="h-8 w-2/3 max-w-md rounded bg-zinc-200" />
           <div className="mt-3 h-4 w-40 rounded bg-zinc-100" />
           <div className="mt-4 flex flex-wrap gap-2">
@@ -191,10 +191,7 @@ export function OrderDetailSkeleton() {
           </div>
         </div>
         {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm"
-          >
+          <div key={i} className="card-stat-skeleton">
             <div className="h-4 w-32 rounded bg-zinc-200" />
             <div className="mt-4 space-y-2">
               <div className="h-3 w-full rounded bg-zinc-100" />
@@ -238,7 +235,7 @@ export function OrderDetailBody({
         {headerExtra}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+            <h1 className="font-heading text-2xl font-semibold tracking-tight text-slate-900">
               {order.patientName?.trim() || "Paciente sem nome"}
             </h1>
             <p className="mt-1 text-sm text-zinc-600">
@@ -283,7 +280,7 @@ export function OrderDetailBody({
 
       <div className="space-y-6">
         <section className={cardClass()}>
-          <h2 className="text-sm font-semibold text-zinc-900">
+          <h2 className="font-heading text-sm font-semibold text-slate-900">
             Entrega e recolha
           </h2>
           <dl className="mt-4 space-y-3 text-sm">
@@ -303,7 +300,9 @@ export function OrderDetailBody({
         </section>
 
         <section className={cardClass()}>
-          <h2 className="text-sm font-semibold text-zinc-900">Requisitos</h2>
+          <h2 className="font-heading text-sm font-semibold text-slate-900">
+            Requisitos
+          </h2>
           {order.requirementsWarning ? (
             <div className="mt-3 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-950">
               Este pedido foi submetido com requisitos incompletos. Pode ser
@@ -339,14 +338,18 @@ export function OrderDetailBody({
         </section>
 
         <section className={cardClass()}>
-          <h2 className="text-sm font-semibold text-zinc-900">Notas</h2>
+          <h2 className="font-heading text-sm font-semibold text-slate-900">
+            Notas
+          </h2>
           <p className="mt-4 text-sm text-zinc-700">
             {notesTrimmed.length > 0 ? notesTrimmed : "Sem notas adicionais"}
           </p>
         </section>
 
         <section className={cardClass()}>
-          <h2 className="text-sm font-semibold text-zinc-900">Ficheiros</h2>
+          <h2 className="font-heading text-sm font-semibold text-slate-900">
+            Ficheiros
+          </h2>
           {order.files.length === 0 ? (
             <p className="mt-4 text-sm text-zinc-600">
               Sem ficheiros anexados
@@ -368,7 +371,7 @@ export function OrderDetailBody({
                     href={f.fileUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="shrink-0 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-800 shadow-sm transition hover:bg-zinc-50"
+                    className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 shadow-sm transition hover:border-blue-200 hover:bg-blue-50/80"
                   >
                     Descarregar
                   </a>
@@ -379,7 +382,7 @@ export function OrderDetailBody({
         </section>
 
         <section className={cardClass()}>
-          <h2 className="text-sm font-semibold text-zinc-900">
+          <h2 className="font-heading text-sm font-semibold text-slate-900">
             Histórico de estado
           </h2>
           <ol className="mt-4 space-y-0">

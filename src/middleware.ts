@@ -63,6 +63,26 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  if (pathname.startsWith("/api/auth/")) {
+    return response;
+  }
+
+  if (
+    pathname === "/dashboard/clinica" ||
+    pathname.startsWith("/dashboard/clinica/")
+  ) {
+    const destPath = pathname.replace(/^\/dashboard\/clinica/, "/clinica");
+    if (destPath !== pathname) {
+      const url = new URL(destPath + request.nextUrl.search, request.url);
+      const redirect = NextResponse.redirect(url);
+      response.cookies.getAll().forEach((cookie) => {
+        const { name, value, ...options } = cookie;
+        redirect.cookies.set(name, value, options);
+      });
+      return redirect;
+    }
+  }
+
   if (pathname === "/login" || pathname.startsWith("/login/")) {
     if (user) {
       const role = getRoleFromUser(user);
@@ -72,16 +92,6 @@ export async function middleware(request: NextRequest) {
           response,
           dashboardPathForRole(role)
         );
-      }
-    }
-    return response;
-  }
-
-  if (pathname === "/" || pathname === "") {
-    if (user) {
-      const role = getRoleFromUser(user);
-      if (role === "ADMIN") {
-        return redirectWithCookies(request, response, "/admin");
       }
     }
     return response;

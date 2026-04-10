@@ -308,7 +308,7 @@ export default function NovoPedidoPage() {
       );
 
       window.setTimeout(() => {
-        router.push("/dashboard/clinica");
+        router.push("/clinica");
       }, 3000);
     } catch {
       setApiError("Erro de rede ao criar pedido.");
@@ -374,10 +374,10 @@ export default function NovoPedidoPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 pb-24">
       <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+        <h1 className="font-heading text-2xl font-semibold tracking-tight text-slate-900">
           Novo pedido
         </h1>
-        <p className="mt-1 text-sm text-zinc-600">
+        <p className="mt-1 text-sm text-slate-600">
           Preencha os dados do paciente e do trabalho. Os prazos atualizam-se
           automaticamente.
         </p>
@@ -396,8 +396,8 @@ export default function NovoPedidoPage() {
       )}
 
       <form onSubmit={onSubmitForm} className="space-y-8">
-        <section className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+        <section className="card-form-section">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
             Paciente
           </h2>
           <div>
@@ -413,7 +413,7 @@ export default function NovoPedidoPage() {
               required
               value={patientName}
               onChange={(e) => setPatientName(e.target.value)}
-              className="mt-1.5 w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-base text-zinc-900 shadow-sm outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200"
+              className="input-dashboard mt-1.5 w-full py-2.5 text-base"
               autoComplete="name"
             />
           </div>
@@ -432,13 +432,13 @@ export default function NovoPedidoPage() {
               inputMode="numeric"
               value={patientAge}
               onChange={(e) => setPatientAge(e.target.value)}
-              className="mt-1.5 w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-base text-zinc-900 shadow-sm outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200"
+              className="input-dashboard mt-1.5 w-full py-2.5 text-base"
             />
           </div>
         </section>
 
-        <section className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+        <section className="card-form-section">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
             Trabalho
           </h2>
           <div>
@@ -455,7 +455,7 @@ export default function NovoPedidoPage() {
               onChange={(e) =>
                 setWorkType((e.target.value || "") as WorkType | "")
               }
-              className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-base text-zinc-900 shadow-sm outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200"
+              className="input-dashboard mt-1.5 w-full py-2.5 text-base"
             >
               <option value="">Selecione…</option>
               {workPayload.workTypes.map((c) => (
@@ -476,8 +476,8 @@ export default function NovoPedidoPage() {
                   key={value}
                   className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${
                     urgencyLevel === value
-                      ? "border-zinc-900 bg-zinc-900 text-white"
-                      : "border-zinc-200 bg-zinc-50 text-zinc-800 hover:border-zinc-300"
+                      ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                      : "border-slate-200 bg-slate-50 text-slate-800 hover:border-blue-200"
                   }`}
                 >
                   <input
@@ -570,7 +570,7 @@ export default function NovoPedidoPage() {
                 const list = e.target.files;
                 setFiles(list ? Array.from(list) : []);
               }}
-              className="mt-1.5 block w-full text-sm text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white"
+              className="mt-1.5 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700"
             />
             {files.length > 0 && (
               <ul className="mt-2 space-y-1 text-xs text-zinc-600">
@@ -582,8 +582,8 @@ export default function NovoPedidoPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/80 p-5">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+        <section className="space-y-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50/90 p-5 shadow-sm shadow-slate-900/5">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
             Pré-visualização de prazos
           </h2>
           {!workType ? (
@@ -608,15 +608,15 @@ export default function NovoPedidoPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
           <button
             type="button"
-            onClick={() => router.push("/dashboard/clinica")}
-            className="rounded-xl border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            onClick={() => router.push("/clinica")}
+            className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={submitting || !!successMsg}
-            className="inline-flex items-center justify-center rounded-xl bg-zinc-900 px-5 py-3 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-medium text-white shadow-sm shadow-blue-900/20 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? (
               <span className="flex items-center gap-2">
@@ -640,10 +640,10 @@ export default function NovoPedidoPage() {
           aria-modal="true"
           aria-labelledby="req-modal-title"
         >
-          <div className="max-h-[90vh] w-full max-w-md overflow-auto rounded-2xl bg-white p-6 shadow-xl">
+          <div className="max-h-[90vh] w-full max-w-md overflow-auto rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xl shadow-slate-900/15">
             <h3
               id="req-modal-title"
-              className="text-lg font-semibold text-zinc-900"
+              className="font-heading text-lg font-semibold text-slate-900"
             >
               Requisitos incompletos
             </h3>
@@ -655,7 +655,7 @@ export default function NovoPedidoPage() {
               <button
                 type="button"
                 onClick={() => setRequirementsModalOpen(false)}
-                className="rounded-xl border border-zinc-300 px-4 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+                className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
               >
                 Cancelar
               </button>
