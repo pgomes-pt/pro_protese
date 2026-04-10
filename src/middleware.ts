@@ -28,18 +28,25 @@ function redirectWithCookies(
 
 function isProtectedPath(pathname: string): boolean {
   return (
-    pathname.startsWith("/dashboard") || pathname.startsWith("/admin")
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/clinica")
   );
 }
 
 function isAllowedForRole(pathname: string, role: UserRole): boolean {
   if (role === "ADMIN") {
     return (
-      pathname.startsWith("/admin") || pathname.startsWith("/dashboard")
+      pathname.startsWith("/admin") ||
+      pathname.startsWith("/dashboard") ||
+      pathname.startsWith("/clinica")
     );
   }
   if (role === "CLINICA") {
-    return pathname.startsWith("/dashboard/clinica");
+    return (
+      pathname.startsWith("/dashboard/clinica") ||
+      pathname.startsWith("/clinica")
+    );
   }
   if (role === "ESTAFETA") {
     return pathname.startsWith("/dashboard/estafeta");

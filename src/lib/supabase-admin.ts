@@ -1,15 +1,16 @@
-import { createClient } from "@supabase/supabase-js";
-import { getSupabaseUrl } from "@/lib/supabase-config";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { getSupabaseUrl } from "./supabase-config";
 
-export function createSupabaseAdminClient() {
+let cached: SupabaseClient | null = null;
+
+/** Service-role client for storage uploads (server only). */
+export function getSupabaseServiceClient(): SupabaseClient | null {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) {
-    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
+  if (!key) return null;
+  if (!cached) {
+    cached = createClient(getSupabaseUrl(), key, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
   }
-  return createClient(getSupabaseUrl(), key, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
+  return cached;
 }
