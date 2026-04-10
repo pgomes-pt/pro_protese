@@ -11,11 +11,15 @@ type CapacityApi = {
   usedHours: number;
   remainingHours: number;
   percentUsed: number;
+  isAtCapacity?: boolean;
   orders: {
     id: string;
     workType: WorkType;
     estimatedHours: number;
     patientName: string | null;
+    clinicName?: string;
+    capacityStatus?: string;
+    expectedDeliveryAt?: string | null;
   }[];
 };
 
@@ -100,7 +104,7 @@ export function AdminCapacityWidget() {
   }
 
   const { maxHours, usedHours, percentUsed, orders } = data;
-  const full = percentUsed >= 100;
+  const full = data.isAtCapacity ?? percentUsed >= 100;
 
   return (
     <section className="overflow-hidden rounded-2xl border border-violet-200/70 bg-gradient-to-br from-violet-50/95 via-white to-sky-50/40 shadow-sm shadow-violet-900/5">

@@ -90,6 +90,25 @@ export function computeExpectedDeliveryAt(
   return calculateDeadline(requestedAt, days);
 }
 
+/** Anchor for deadline math when the driver is a calendar production day (local). */
+export function deliveryAnchorFromProductionDate(productionDate: Date): Date {
+  const a = startOfDay(productionDate);
+  a.setHours(9, 0, 0, 0);
+  return a;
+}
+
+export function computeExpectedDeliveryFromProductionDate(
+  productionDate: Date,
+  urgencyLevel: UrgencyLevel,
+  deadlineDays: number | null
+): Date {
+  return computeExpectedDeliveryAt(
+    deliveryAnchorFromProductionDate(productionDate),
+    urgencyLevel,
+    deadlineDays
+  );
+}
+
 /** Limites do dia civil local do servidor (coerente com {@link calculateDeadline}). */
 export function localDayRange(now: Date): { start: Date; end: Date } {
   const start = startOfDay(now);

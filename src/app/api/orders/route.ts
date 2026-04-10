@@ -9,16 +9,21 @@ import { type NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import {
+  findFirstAvailableDate,
+  reserveCapacity,
+} from "@/lib/capacity";
+import {
   NOVA_CLINIC_WORK_TYPES,
   OUTSOURCING_DELIVERY_NOTE,
   SUPER_URGENCY_WORK_TYPES,
   computeCollectionDate,
-  computeExpectedDeliveryAt,
+  computeExpectedDeliveryFromProductionDate,
   isSuperUrgency,
   orderRequiresOutsourcing,
   localDayRange,
   orderFullInclude,
 } from "@/lib/order-logic";
+import { startOfDay } from "date-fns";
 
 export const dynamic = "force-dynamic";
 
@@ -178,11 +183,30 @@ export async function POST(request: NextRequest) {
     const requirementsWarning = !requirementsMet;
 
     const deadlineDays = workConfig?.deadlineDays ?? null;
+    const collectionDate = computeCollectionDate(now);
+
+    let estimatedHours = workConfig?.estimatedHours ?? 0;
+    let productionDate: Date;
+
+    if (outsourcing) {
+      estimatedHours = 0;
+      productionDate = startOfDay(collectionDate);
+    } else {
+      estimatedHours = workConfig?.estimatedHours ?? 0;
+      productionDate = await findFirstAvailableDate(
+        startOfDay(collectionDate),
+        estimatedHours
+      );
+    }
+
+    const isProvisional = isSuperUrgency(urgencyLevel);
     const expectedDeliveryAt = outsourcing
       ? null
-      : computeExpectedDeliveryAt(now, urgencyLevel, deadlineDays);
-
-    const collectionDate = computeCollectionDate(now);
+      : computeExpectedDeliveryFromProductionDate(
+          productionDate,
+          urgencyLevel,
+          deadlineDays
+        );
 
     const patientAge =
       typeof body.patientAge === "number" &&
@@ -208,6 +232,14 @@ export async function POST(request: NextRequest) {
           urgencyApproved: isSuperUrgency(urgencyLevel) ? false : null,
         },
       });
+
+      await reserveCapacity(
+        created.id,
+        productionDate,
+        estimatedHours,
+        isProvisional,
+        tx
+      );
 
       await tx.orderStatusHistory.create({
         data: {

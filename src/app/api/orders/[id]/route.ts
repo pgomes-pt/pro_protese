@@ -1,9 +1,14 @@
 import { Prisma, UserRole, WorkStatus } from "@prisma/client";
 import { type NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
+import {
+  adminOverrideCapacity,
+  releaseCapacity,
+  reserveCapacity,
+} from "@/lib/capacity";
 import { prisma } from "@/lib/prisma";
 import {
-  computeExpectedDeliveryAt,
+  computeExpectedDeliveryFromProductionDate,
   orderFullInclude,
   orderRequiresOutsourcing,
 } from "@/lib/order-logic";
@@ -19,6 +24,13 @@ function parseWorkStatus(value: unknown): WorkStatus | null {
   return (Object.values(WorkStatus) as string[]).includes(value)
     ? (value as WorkStatus)
     : null;
+}
+
+function parseProductionDate(value: unknown): Date | null {
+  if (typeof value !== "string") return null;
+  const t = Date.parse(value);
+  if (Number.isNaN(t)) return null;
+  return new Date(t);
 }
 
 async function loadOrderForUser(
@@ -105,7 +117,7 @@ export async function PATCH(
   }
 
   const { id } = await ctx.params;
-  const { order: existing, forbidden } = await loadOrderForUser(
+  const { order: loaded, forbidden } = await loadOrderForUser(
     id,
     auth.dbUser
   );
@@ -113,9 +125,11 @@ export async function PATCH(
   if (forbidden) {
     return jsonError(403, "Não tem permissão para atualizar este pedido.");
   }
-  if (!existing) {
+  if (!loaded) {
     return jsonError(404, "Pedido não encontrado.");
   }
+
+  let existing = loaded;
 
   let body: Record<string, unknown>;
   try {
@@ -129,12 +143,23 @@ export async function PATCH(
     "notes",
     "urgencyApproved",
     "returnReason",
+    "productionDate",
   ]);
   const unknown = Object.keys(body).filter((k) => !allowedKeys.has(k));
   if (unknown.length > 0) {
     return jsonError(
       400,
       `Campos não permitidos: ${unknown.join(", ")}.`
+    );
+  }
+
+  if (
+    body.productionDate !== undefined &&
+    dbUser.role !== UserRole.ADMIN
+  ) {
+    return jsonError(
+      403,
+      "Apenas administradores podem alterar a data de produção."
     );
   }
 
@@ -146,6 +171,26 @@ export async function PATCH(
       403,
       "Apenas administradores podem alterar a aprovação de urgência."
     );
+  }
+
+  if (body.productionDate !== undefined) {
+    const pd = parseProductionDate(body.productionDate);
+    if (!pd) {
+      return jsonError(400, "productionDate inválido.");
+    }
+    try {
+      await adminOverrideCapacity(existing.id, pd);
+    } catch (e) {
+      console.error(e);
+      return jsonError(500, "Erro ao atualizar a data de produção.");
+    }
+    const reloaded = await prisma.order.findUnique({
+      where: { id: existing.id },
+      include: orderFullInclude,
+    });
+    if (reloaded) {
+      existing = reloaded;
+    }
   }
 
   let status: WorkStatus | undefined;
@@ -200,23 +245,42 @@ export async function PATCH(
     data.returnedAt = new Date();
   }
 
-  if (urgencyApproved === true && dbUser.role === UserRole.ADMIN) {
-    const workConfig = await prisma.workTypeConfig.findUnique({
-      where: { workType: existing.workType },
-    });
-    if (!orderRequiresOutsourcing(existing.workType, workConfig)) {
-      data.expectedDeliveryAt = computeExpectedDeliveryAt(
-        new Date(),
-        existing.urgencyLevel,
-        workConfig?.deadlineDays ?? null
-      );
-    }
-    data.urgencyApprovedAt = new Date();
-    data.urgencyApprovedBy = dbUser.id;
-  }
-
   try {
     const updated = await prisma.$transaction(async (tx) => {
+      if (urgencyApproved === false && dbUser.role === UserRole.ADMIN) {
+        await releaseCapacity(existing.id, tx);
+      }
+
+      if (
+        status === WorkStatus.ENTREGUE ||
+        status === WorkStatus.DEVOLVIDO
+      ) {
+        await releaseCapacity(existing.id, tx);
+      }
+
+      if (urgencyApproved === true && dbUser.role === UserRole.ADMIN) {
+        const workConfig = await tx.workTypeConfig.findUnique({
+          where: { workType: existing.workType },
+        });
+        const pd =
+          existing.productionDate ?? existing.collectionDate ?? new Date();
+        const est =
+          existing.estimatedHours ??
+          (orderRequiresOutsourcing(existing.workType, workConfig)
+            ? 0
+            : workConfig?.estimatedHours ?? 0);
+        await reserveCapacity(existing.id, pd, est, false, tx);
+        if (!orderRequiresOutsourcing(existing.workType, workConfig)) {
+          data.expectedDeliveryAt = computeExpectedDeliveryFromProductionDate(
+            pd,
+            existing.urgencyLevel,
+            workConfig?.deadlineDays ?? null
+          );
+        }
+        data.urgencyApprovedAt = new Date();
+        data.urgencyApprovedBy = dbUser.id;
+      }
+
       if (Object.keys(data).length > 0) {
         await tx.order.update({
           where: { id: existing.id },

@@ -1,18 +1,10 @@
-import { UserRole, WorkStatus } from "@prisma/client";
+import { UserRole } from "@prisma/client";
 import { addDays, format, startOfDay } from "date-fns";
 import { type NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
-import { prisma } from "@/lib/prisma";
+import { getCapacityForDate } from "@/lib/capacity";
 
 export const dynamic = "force-dynamic";
-
-const DEFAULT_MAX_HOURS = 7;
-
-const EXCLUDED_STATUSES: WorkStatus[] = [
-  WorkStatus.ENTREGUE,
-  WorkStatus.DEVOLVIDO,
-  WorkStatus.EM_ESPERA,
-];
 
 function jsonError(status: number, message: string) {
   return NextResponse.json({ error: message }, { status });
@@ -47,49 +39,24 @@ export async function GET(request: NextRequest) {
     return jsonError(400, "Parâmetro date inválido (use yyyy-MM-dd).");
   }
 
-  const dayEnd = addDays(dayStart, 1);
   const dateKey = format(dayStart, "yyyy-MM-dd");
 
   try {
-    const [labRow, configs, orders] = await Promise.all([
-      prisma.labConfig.findFirst({ orderBy: { updatedAt: "desc" } }),
-      prisma.workTypeConfig.findMany(),
-      prisma.order.findMany({
-        where: {
-          collectionDate: {
-            gte: dayStart,
-            lt: dayEnd,
-          },
-          status: { notIn: EXCLUDED_STATUSES },
-        },
-        select: {
-          id: true,
-          workType: true,
-          patientName: true,
-        },
-        orderBy: { id: "asc" },
-      }),
-    ]);
-
-    const maxHours = labRow?.maxDailyHours ?? DEFAULT_MAX_HOURS;
-    const hoursByType = new Map(
-      configs.map((c) => [c.workType, c.estimatedHours] as const)
-    );
-
-    const ordersOut = orders.map((o) => {
-      const estimatedHours = hoursByType.get(o.workType) ?? 0;
-      return {
-        id: o.id,
-        workType: o.workType,
-        estimatedHours,
-        patientName: o.patientName ?? null,
-      };
-    });
-
-    const usedHours = ordersOut.reduce((sum, o) => sum + o.estimatedHours, 0);
-    const remainingHours = Math.max(0, maxHours - usedHours);
+    const { usedHours, maxHours, remainingHours, orders } =
+      await getCapacityForDate(dayStart);
     const percentUsed =
       maxHours > 0 ? Math.round((usedHours / maxHours) * 100) : 0;
+    const isAtCapacity = remainingHours <= 0;
+
+    const ordersOut = orders.map((o) => ({
+      id: o.id,
+      workType: o.workType,
+      estimatedHours: o.estimatedHours,
+      patientName: o.patientName ?? null,
+      clinicName: o.clinic.name,
+      capacityStatus: o.capacityStatus,
+      expectedDeliveryAt: o.expectedDeliveryAt?.toISOString() ?? null,
+    }));
 
     return NextResponse.json({
       date: dateKey,
@@ -97,6 +64,7 @@ export async function GET(request: NextRequest) {
       usedHours,
       remainingHours,
       percentUsed,
+      isAtCapacity,
       orders: ordersOut,
     });
   } catch (e) {

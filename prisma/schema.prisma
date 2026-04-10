@@ -105,6 +105,11 @@ model Order {
   minDeliveryDate    DateTime?
   expectedDeliveryAt DateTime?
   deliveredAt        DateTime?
+  productionDate     DateTime?
+
+  // Capacidade (capacityStatus: CONFIRMED | PROVISIONAL | MANUAL_OVERRIDE | PROVISIONAL_REJECTED)
+  capacityStatus String @default("CONFIRMED")
+  estimatedHours Float  @default(0)
 
   // Devolução
   returnedAt   DateTime?
