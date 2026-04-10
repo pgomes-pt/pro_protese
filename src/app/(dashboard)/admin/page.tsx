@@ -787,7 +787,7 @@ export default function AdminDashboardPage() {
                                   </select>
                                 </div>
                                 <Link
-                                  href={`/clinica/pedidos/${o.id}`}
+                                  href={`/admin/pedidos/${o.id}`}
                                   className="inline-flex rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-800 shadow-sm transition hover:bg-zinc-50"
                                 >
                                   Ver detalhes

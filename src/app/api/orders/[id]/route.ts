@@ -59,7 +59,35 @@ export async function GET(
     return jsonError(404, "Pedido não encontrado.");
   }
 
-  return NextResponse.json(order);
+  const workTypeConfig = await prisma.workTypeConfig.findUnique({
+    where: { workType: order.workType },
+  });
+
+  const actorIds = [
+    ...new Set(
+      order.statusHistory
+        .map((h) => h.changedBy)
+        .filter((id): id is string => typeof id === "string" && id.length > 0)
+    ),
+  ];
+
+  const actors =
+    actorIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: actorIds } },
+          select: { id: true, name: true },
+        })
+      : [];
+
+  const historyUserNames = Object.fromEntries(
+    actors.map((a) => [a.id, a.name])
+  );
+
+  return NextResponse.json({
+    ...order,
+    workTypeConfig,
+    historyUserNames,
+  });
 }
 
 export async function PATCH(
