@@ -1,8 +1,37 @@
+import * as fs from "fs";
+import * as path from "path";
 import {
   PrismaClient,
+  UserRole,
   WorkType,
 } from "@prisma/client";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { addDays, startOfDay, subDays } from "date-fns";
+
+function loadEnvFile(filePath: string) {
+  if (!fs.existsSync(filePath)) return;
+  const content = fs.readFileSync(filePath, "utf8");
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq <= 0) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let val = trimmed.slice(eq + 1).trim();
+    if (
+      (val.startsWith('"') && val.endsWith('"')) ||
+      (val.startsWith("'") && val.endsWith("'"))
+    ) {
+      val = val.slice(1, -1);
+    }
+    if (process.env[key] === undefined) {
+      process.env[key] = val;
+    }
+  }
+}
+
+loadEnvFile(path.join(process.cwd(), ".env.local"));
+loadEnvFile(path.join(process.cwd(), ".env"));
 
 const prisma = new PrismaClient();
 
@@ -510,6 +539,145 @@ async function seedWorkPrices() {
   }
 }
 
+async function findAuthUserByEmail(
+  supabaseAdmin: SupabaseClient,
+  email: string
+) {
+  const perPage = 1000;
+  for (let page = 1; page <= 10; page++) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+      page,
+      perPage,
+    });
+    if (error) throw error;
+    const users = data?.users ?? [];
+    const found = users.find(
+      (u) => u.email?.toLowerCase() === email.toLowerCase()
+    );
+    if (found) return found;
+    if (users.length < perPage) break;
+  }
+  return undefined;
+}
+
+async function seedAdminUser() {
+  const emailRaw = process.env.SEED_ADMIN_EMAIL?.trim();
+  const password = process.env.SEED_ADMIN_PASSWORD;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!emailRaw || !password) {
+    console.log(
+      "Seed admin: ignorado (defina SEED_ADMIN_EMAIL e SEED_ADMIN_PASSWORD)."
+    );
+    return;
+  }
+
+  const email = emailRaw.toLowerCase();
+
+  if (!url || !serviceKey) {
+    console.log(
+      "Seed admin: ignorado (NEXT_PUBLIC_SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY em falta)."
+    );
+    return;
+  }
+
+  const supabaseAdmin = createClient(url, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const existingPrisma = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (existingPrisma?.role === UserRole.ADMIN) {
+    console.log(
+      `Seed admin: utilizador admin já existe em Prisma (${email}). Ignorado.`
+    );
+    return;
+  }
+
+  const existingAuth = await findAuthUserByEmail(supabaseAdmin, email);
+  if (existingAuth) {
+    if (!existingPrisma) {
+      await prisma.user.create({
+        data: {
+          id: existingAuth.id,
+          email,
+          name: "Administrador",
+          role: UserRole.ADMIN,
+          clinicId: null,
+        },
+      });
+      console.log(
+        `Seed admin: registo Prisma criado para utilizador Supabase existente (${email}).`
+      );
+    } else {
+      console.log(
+        `Seed admin: email já existe no Supabase com outro perfil em Prisma (${email}). Revise manualmente.`
+      );
+    }
+    return;
+  }
+
+  const { data: created, error: createError } =
+    await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        role: "ADMIN",
+        name: "Administrador",
+      },
+    });
+
+  if (createError || !created.user) {
+    const msg = createError?.message ?? "";
+    if (
+      msg.toLowerCase().includes("already") ||
+      msg.toLowerCase().includes("registered")
+    ) {
+      const u = await findAuthUserByEmail(supabaseAdmin, email);
+      if (u && !existingPrisma) {
+        await prisma.user.create({
+          data: {
+            id: u.id,
+            email,
+            name: "Administrador",
+            role: UserRole.ADMIN,
+            clinicId: null,
+          },
+        });
+        console.log(
+          `Seed admin: registo Prisma criado após conflito Supabase (${email}).`
+        );
+      } else {
+        console.log(`Seed admin: utilizador já existente (${email}). Ignorado.`);
+      }
+      return;
+    }
+    throw new Error(msg || "Supabase admin.createUser failed");
+  }
+
+  const authId = created.user.id;
+
+  try {
+    await prisma.user.create({
+      data: {
+        id: authId,
+        email,
+        name: "Administrador",
+        role: UserRole.ADMIN,
+        clinicId: null,
+      },
+    });
+    console.log(`Seed admin: criado com sucesso (${email}, id=${authId}).`);
+  } catch (e) {
+    await supabaseAdmin.auth.admin.deleteUser(authId);
+    throw e;
+  }
+}
+
 async function main() {
   try {
     console.log("Seeding holidays…");
@@ -520,6 +688,8 @@ async function main() {
     await seedUrgencyConfig();
     console.log("Seeding WorkPrice…");
     await seedWorkPrices();
+    console.log("Seeding admin user…");
+    await seedAdminUser();
     console.log("Seed completed.");
   } catch (e) {
     console.error(e);
