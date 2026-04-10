@@ -5,7 +5,7 @@ import {
   WorkStatus,
   WorkType,
 } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -66,12 +66,13 @@ export async function GET() {
     });
 
     return NextResponse.json(orders);
-  } catch {
+  } catch (e) {
+    console.error("[GET /api/orders]", e);
     return jsonError(500, "Erro ao carregar pedidos.");
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const auth = await authenticateRequest();
   if (!auth.ok) {
     return jsonError(auth.status, auth.message);

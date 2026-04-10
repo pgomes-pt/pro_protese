@@ -1,5 +1,5 @@
 import { UserRole } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { getSupabaseServiceClient } from "@/lib/supabase-admin";
@@ -17,7 +17,7 @@ function parseRole(value: unknown): UserRole | null {
   return ROLES.includes(value as UserRole) ? (value as UserRole) : null;
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;

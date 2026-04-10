@@ -1,5 +1,5 @@
 import { Prisma, UserRole, WorkStatus } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -41,7 +41,7 @@ async function loadOrderForUser(
 }
 
 export async function GET(
-  _request: Request,
+  _request: NextRequest,
   ctx: { params: Promise<{ id: string }> }
 ) {
   const auth = await authenticateRequest();
@@ -91,7 +91,7 @@ export async function GET(
 }
 
 export async function PATCH(
-  request: Request,
+  request: NextRequest,
   ctx: { params: Promise<{ id: string }> }
 ) {
   const auth = await authenticateRequest();

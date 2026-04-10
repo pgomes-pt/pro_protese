@@ -199,22 +199,43 @@ export default function AdminDashboardPage() {
       ]);
 
       if (!ordersRes.ok) {
-        const j = await ordersRes.json().catch(() => ({}));
-        throw new Error(
-          typeof j.error === "string" ? j.error : "Erro ao carregar pedidos."
+        const errorBodyText = await ordersRes.text();
+        console.error(
+          "[admin dashboard] GET /api/orders failed:",
+          ordersRes.status,
+          ordersRes.statusText,
+          errorBodyText
         );
+        let errMsg = "Erro ao carregar pedidos.";
+        try {
+          const j = JSON.parse(errorBodyText) as { error?: unknown };
+          if (typeof j.error === "string") errMsg = j.error;
+        } catch {
+          /* keep default */
+        }
+        throw new Error(errMsg);
       }
 
-      const list = (await ordersRes.json()) as OrderRow[];
+      const rawOrders = await ordersRes.json();
+      const list: OrderRow[] = Array.isArray(rawOrders) ? rawOrders : [];
       setOrders(list);
 
-      if (urgRes.ok) {
-        const u = (await urgRes.json()) as UrgencyAvailability;
-        setUrgencyAvail(u);
-      } else {
+      try {
+        if (urgRes.ok) {
+          const u = (await urgRes.json()) as UrgencyAvailability;
+          setUrgencyAvail(u);
+        } else {
+          setUrgencyAvail(null);
+        }
+      } catch (urgE) {
+        console.error(
+          "[admin dashboard] urgency-availability response failed:",
+          urgE
+        );
         setUrgencyAvail(null);
       }
     } catch (e) {
+      console.error("[admin dashboard] load() failed:", e);
       setOrders([]);
       setUrgencyAvail(null);
       setError(e instanceof Error ? e.message : "Erro ao carregar dados.");

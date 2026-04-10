@@ -1,5 +1,5 @@
 import { UserRole } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 
@@ -15,7 +15,7 @@ function parseNonNegativeInt(value: unknown): number | null {
   return value;
 }
 
-export async function PATCH(request: Request) {
+export async function PATCH(request: NextRequest) {
   const auth = await authenticateRequest();
   if (!auth.ok) {
     return jsonError(auth.status, auth.message);

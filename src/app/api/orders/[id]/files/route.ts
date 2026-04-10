@@ -1,5 +1,5 @@
 import { UserRole } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { getSupabaseServiceClient } from "@/lib/supabase-admin";
@@ -38,7 +38,7 @@ function isAllowedFile(file: File): boolean {
 }
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   ctx: { params: Promise<{ id: string }> }
 ) {
   const auth = await authenticateRequest();
