@@ -3,6 +3,14 @@
 import type { UrgencyLevel, WorkStatus, WorkType } from "@prisma/client";
 import { format, isToday } from "date-fns";
 import { pt } from "date-fns/locale";
+import {
+  ClipboardList,
+  Hammer,
+  PackageCheck,
+  PlusCircle,
+  Settings,
+  Truck,
+} from "lucide-react";
 import Link from "next/link";
 import {
   useCallback,
@@ -57,6 +65,37 @@ const ALL_URGENCIES = Object.keys(URGENCY_LABELS) as UrgencyLevel[];
 
 const REJECT_RETURN_REASON = "Urgência rejeitada pelo administrador";
 
+type StatQuickFilterId =
+  | "pedidos-hoje"
+  | "urgencias-aprovar"
+  | "em-producao"
+  | "recolhas-hoje"
+  | "entregas-hoje";
+
+function matchesStatQuickFilter(
+  o: OrderRow,
+  f: StatQuickFilterId | null
+): boolean {
+  if (f === null) return true;
+  switch (f) {
+    case "pedidos-hoje":
+      return isToday(new Date(o.requestedAt));
+    case "urgencias-aprovar":
+      return o.urgencyApproved === false && o.urgencyLevel !== "NORMAL";
+    case "em-producao":
+      return o.status === "EM_PRODUCAO";
+    case "recolhas-hoje":
+      return o.collectionDate != null && isToday(new Date(o.collectionDate));
+    case "entregas-hoje":
+      return (
+        o.expectedDeliveryAt != null &&
+        isToday(new Date(o.expectedDeliveryAt))
+      );
+    default:
+      return true;
+  }
+}
+
 function formatExpectedDelivery(expectedDeliveryAt: string | null): string {
   if (expectedDeliveryAt == null) return "A confirmar";
   const d = new Date(expectedDeliveryAt);
@@ -69,11 +108,24 @@ function formatDateTime(iso: string): string {
   return format(new Date(iso), "d MMM yyyy, HH:mm", { locale: pt });
 }
 
-function StatCardSkeleton() {
+function StatsStripSkeleton() {
   return (
-    <div className="card-stat-skeleton animate-pulse">
-      <div className="h-3 w-28 rounded bg-zinc-200" />
-      <div className="mt-3 h-8 w-16 rounded bg-zinc-200" />
+    <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+      <div className="h-3 w-20 animate-pulse rounded bg-slate-200" />
+      <div className="h-14 min-w-0 flex-1 animate-pulse rounded-xl bg-slate-100 shadow-sm" />
+    </div>
+  );
+}
+
+function UrgencyRowSkeleton() {
+  return (
+    <div className="grid h-[72px] grid-cols-3 gap-3">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div
+          key={i}
+          className="animate-pulse rounded-xl bg-slate-100/90 shadow-sm"
+        />
+      ))}
     </div>
   );
 }
@@ -174,6 +226,8 @@ export default function AdminDashboardPage() {
   const [filterStatus, setFilterStatus] = useState<WorkStatus | "">("");
   const [filterWorkType, setFilterWorkType] = useState<WorkType | "">("");
   const [filterUrgency, setFilterUrgency] = useState<UrgencyLevel | "">("");
+  const [statQuickFilter, setStatQuickFilter] =
+    useState<StatQuickFilterId | null>(null);
 
   const [rejectConfirmId, setRejectConfirmId] = useState<string | null>(null);
   const [urgencyActionId, setUrgencyActionId] = useState<string | null>(null);
@@ -249,6 +303,10 @@ export default function AdminDashboardPage() {
     void load();
   }, [load]);
 
+  const toggleStatQuickFilter = useCallback((id: StatQuickFilterId) => {
+    setStatQuickFilter((prev) => (prev === id ? null : id));
+  }, []);
+
   useEffect(() => {
     if (configModalOpen && urgencyAvail) {
       setConfigMaxUrgent(String(urgencyAvail.urgent.limit));
@@ -307,9 +365,18 @@ export default function AdminDashboardPage() {
       if (filterStatus && o.status !== filterStatus) return false;
       if (filterWorkType && o.workType !== filterWorkType) return false;
       if (filterUrgency && o.urgencyLevel !== filterUrgency) return false;
+      if (!matchesStatQuickFilter(o, statQuickFilter)) return false;
       return true;
     });
-  }, [orders, search, filterClinic, filterStatus, filterWorkType, filterUrgency]);
+  }, [
+    orders,
+    search,
+    filterClinic,
+    filterStatus,
+    filterWorkType,
+    filterUrgency,
+    statQuickFilter,
+  ]);
 
   async function patchOrder(id: string, body: Record<string, unknown>) {
     const res = await fetch(`/api/orders/${id}`, {
@@ -444,20 +511,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="dashboard-bg">
-      <header className="dashboard-header">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="font-heading text-2xl font-semibold tracking-tight text-slate-900">
-              Painel de Administração
-            </h1>
-            <p className="mt-1 text-sm text-slate-600">
-              Pedidos, urgências e capacidade diária
-            </p>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-7xl px-4 py-8">
+      <main className="mx-auto w-full max-w-[1600px] px-4 py-8">
         {error && (
           <div
             className="mb-6 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-900 sm:flex-row sm:items-center sm:justify-between"
@@ -477,256 +531,437 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-          <div className="min-w-0 flex-1 space-y-6">
-            {loading ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <StatCardSkeleton key={i} />
-                ))}
-              </div>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                <div className="card-stat">
-                  <p className="text-sm font-medium text-slate-500">
-                    Total de pedidos hoje
-                  </p>
-                  <p className="mt-2 text-3xl font-semibold tabular-nums text-slate-900">
-                    {stats.totalToday}
-                  </p>
+        <div className="space-y-6">
+          {loading ? (
+            <div className="flex flex-col gap-3">
+              <StatsStripSkeleton />
+              <UrgencyRowSkeleton />
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <section className="flex min-w-0 flex-row flex-wrap items-center gap-3 sm:gap-4">
+                <span className="shrink-0 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                  Operações
+                </span>
+                <div className="min-w-0 w-full flex-1 basis-full rounded-xl bg-white px-6 py-4 shadow-sm sm:basis-0">
+                  <div className="flex min-w-0 items-center justify-center gap-6 overflow-x-auto">
+                    <button
+                      type="button"
+                      aria-pressed={statQuickFilter === "pedidos-hoje"}
+                      onClick={() => toggleStatQuickFilter("pedidos-hoje")}
+                      className={`flex min-w-[4.5rem] shrink-0 flex-col items-center gap-0.5 rounded-md px-2 py-0.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 ${
+                        statQuickFilter === "pedidos-hoje"
+                          ? "font-semibold underline decoration-2 decoration-slate-500 underline-offset-4"
+                          : "hover:bg-slate-50"
+                      }`}
+                    >
+                      <ClipboardList
+                        className="size-4 shrink-0 text-slate-400"
+                        aria-hidden
+                      />
+                      <span className="text-xl font-bold tabular-nums text-slate-900">
+                        {stats.totalToday}
+                      </span>
+                      <span className="text-xs text-slate-400">Pedidos hoje</span>
+                    </button>
+                    <div
+                      className="shrink-0 self-stretch border-r border-slate-100"
+                      aria-hidden
+                    />
+                    <button
+                      type="button"
+                      aria-pressed={statQuickFilter === "em-producao"}
+                      onClick={() => toggleStatQuickFilter("em-producao")}
+                      className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-md px-2 py-0.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 ${
+                        statQuickFilter === "em-producao"
+                          ? "font-semibold underline decoration-2 decoration-blue-500 underline-offset-4"
+                          : "hover:bg-slate-50"
+                      }`}
+                    >
+                      <Hammer
+                        className="size-4 shrink-0 text-blue-400"
+                        aria-hidden
+                      />
+                      <span className="text-xl font-bold tabular-nums text-slate-900">
+                        {stats.inProduction}
+                      </span>
+                      <span className="text-xs text-slate-400">Em produção</span>
+                    </button>
+                    <div
+                      className="h-8 shrink-0 self-center border-r border-slate-100"
+                      aria-hidden
+                    />
+                    <button
+                      type="button"
+                      aria-pressed={statQuickFilter === "recolhas-hoje"}
+                      onClick={() => toggleStatQuickFilter("recolhas-hoje")}
+                      className={`flex min-w-[4.5rem] shrink-0 flex-col items-center gap-0.5 rounded-md px-2 py-0.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 ${
+                        statQuickFilter === "recolhas-hoje"
+                          ? "font-semibold underline decoration-2 decoration-violet-500 underline-offset-4"
+                          : "hover:bg-slate-50"
+                      }`}
+                    >
+                      <PackageCheck
+                        className="size-4 shrink-0 text-violet-400"
+                        aria-hidden
+                      />
+                      <span className="text-xl font-bold tabular-nums text-slate-900">
+                        {stats.collectToday}
+                      </span>
+                      <span className="text-xs text-slate-400">Recolhas hoje</span>
+                    </button>
+                    <div
+                      className="shrink-0 self-stretch border-r border-slate-100"
+                      aria-hidden
+                    />
+                    <button
+                      type="button"
+                      aria-pressed={statQuickFilter === "entregas-hoje"}
+                      onClick={() => toggleStatQuickFilter("entregas-hoje")}
+                      className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-md px-2 py-0.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 ${
+                        statQuickFilter === "entregas-hoje"
+                          ? "font-semibold underline decoration-2 decoration-emerald-500 underline-offset-4"
+                          : "hover:bg-slate-50"
+                      }`}
+                    >
+                      <Truck
+                        className="size-4 shrink-0 text-emerald-400"
+                        aria-hidden
+                      />
+                      <span className="text-xl font-bold tabular-nums text-slate-900">
+                        {stats.deliverToday}
+                      </span>
+                      <span className="text-xs text-slate-400">Entregas hoje</span>
+                    </button>
+                    <div
+                      className="shrink-0 self-stretch border-r border-slate-100"
+                      aria-hidden
+                    />
+                    <div className="flex min-w-0 flex-1 items-center justify-center">
+                      <Link
+                        href="/admin/novo-pedido"
+                        className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                      >
+                        <PlusCircle className="size-3.5 shrink-0" aria-hidden />
+                        Novo Pedido
+                      </Link>
+                    </div>
+                  </div>
                 </div>
-                <div className="card-stat">
-                  <p className="text-sm font-medium text-slate-500">
-                    Urgências por aprovar
-                  </p>
-                  <p className="mt-2 text-3xl font-semibold tabular-nums text-red-700">
-                    {stats.pendingUrgencyApprovals}
-                  </p>
-                </div>
-                <div className="card-stat">
-                  <p className="text-sm font-medium text-slate-500">
-                    Em produção
-                  </p>
-                  <p className="mt-2 text-3xl font-semibold tabular-nums text-amber-700">
-                    {stats.inProduction}
-                  </p>
-                </div>
-                <div className="card-stat">
-                  <p className="text-sm font-medium text-slate-500">
-                    Recolha prevista hoje
-                  </p>
-                  <p className="mt-2 text-3xl font-semibold tabular-nums text-sky-800">
-                    {stats.collectToday}
-                  </p>
-                </div>
-                <div className="card-stat">
-                  <p className="text-sm font-medium text-slate-500">
-                    Entrega prevista hoje
-                  </p>
-                  <p className="mt-2 text-3xl font-semibold tabular-nums text-green-800">
-                    {stats.deliverToday}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {!loading && pendingUrgencyOrders.length > 0 && (
-              <section className="card-alert-amber">
-                <h2 className="font-heading text-lg font-semibold text-slate-900">
-                  Aprovação de urgências
-                </h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  Pedidos à espera de decisão sobre o nível de urgência.
-                </p>
-                <ul className="mt-4 grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
-                  {pendingUrgencyOrders.map((o) => {
-                    const busy = urgencyActionId === o.id;
-                    return (
-                      <li key={o.id} className="card-pending-item">
-                        <div className="flex flex-col gap-2 text-sm">
-                          <p className="font-semibold text-zinc-900">
-                            {o.clinic.name}
-                          </p>
-                          <p className="text-zinc-700">
-                            <span className="text-zinc-500">Paciente: </span>
-                            {o.patientName?.trim() || "—"}
-                          </p>
-                          <p className="text-zinc-700">
-                            <span className="text-zinc-500">Trabalho: </span>
-                            {WORK_TYPE_LABELS[o.workType]}
-                          </p>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-zinc-500">Urgência:</span>
-                            <UrgencyBadge level={o.urgencyLevel} />
-                          </div>
-                          <p className="text-zinc-700">
-                            <span className="text-zinc-500">
-                              Entrega prevista:{" "}
-                            </span>
-                            {formatExpectedDelivery(o.expectedDeliveryAt)}
-                          </p>
-                          <p className="text-zinc-600">
-                            <span className="text-zinc-500">Pedido em: </span>
-                            {formatDateTime(o.requestedAt)}
-                          </p>
-                        </div>
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() => void handleApproveUrgency(o.id)}
-                            className="inline-flex flex-1 items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50 sm:flex-none"
-                          >
-                            Aprovar
-                          </button>
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() => setRejectConfirmId(o.id)}
-                            className="inline-flex flex-1 items-center justify-center rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-red-700 disabled:opacity-50 sm:flex-none"
-                          >
-                            Rejeitar
-                          </button>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
               </section>
-            )}
 
-            <section>
+              <section className="flex min-w-0 flex-row flex-wrap items-center gap-3 sm:gap-4">
+                <span className="shrink-0 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                  Urgências
+                </span>
+                <div className="grid min-h-[72px] w-full min-w-0 flex-1 basis-full grid-cols-1 gap-3 sm:basis-0 sm:grid-cols-3">
+                  <button
+                    type="button"
+                    aria-pressed={statQuickFilter === "urgencias-aprovar"}
+                    onClick={() => toggleStatQuickFilter("urgencias-aprovar")}
+                    className={`flex min-h-[72px] items-center justify-between rounded-xl border-l-4 border-amber-400 px-5 py-3 text-left shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 ${
+                      statQuickFilter === "urgencias-aprovar"
+                        ? "bg-amber-100"
+                        : "bg-amber-50"
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-900">
+                        Por aprovar
+                      </p>
+                      <p className="text-lg font-bold tabular-nums text-amber-700">
+                        {stats.pendingUrgencyApprovals}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center justify-end">
+                      {stats.pendingUrgencyApprovals > 0 ? (
+                        <span
+                          className="inline-block size-2.5 animate-pulse rounded-full bg-amber-500 shadow-sm"
+                          aria-hidden
+                        />
+                      ) : null}
+                    </div>
+                  </button>
+
+                  {urgencyAvail ? (
+                    <>
+                      <div className="flex min-h-[72px] flex-col justify-center rounded-xl border-l-4 border-sky-400 bg-sky-50 px-5 py-3 shadow-sm">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-800">
+                              Urgências normais
+                            </p>
+                            <p className="text-lg font-bold tabular-nums text-sky-700">
+                              {urgencyAvail.urgent.used}
+                            </p>
+                          </div>
+                          <span className="shrink-0 text-xs font-medium tabular-nums text-sky-700">
+                            {urgencyAvail.urgent.used} /{" "}
+                            {urgencyAvail.urgent.limit}
+                          </span>
+                        </div>
+                        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-sky-200">
+                          <div
+                            className="h-full rounded-full bg-sky-500 transition-all duration-300"
+                            style={{
+                              width: `${urgencyAvail.urgent.limit > 0 ? Math.min(100, (urgencyAvail.urgent.used / urgencyAvail.urgent.limit) * 100) : 0}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="relative flex min-h-[72px] flex-col justify-center rounded-xl border-l-4 border-rose-400 bg-rose-50 px-5 py-3 pr-10 shadow-sm">
+                        <button
+                          type="button"
+                          onClick={() => setConfigModalOpen(true)}
+                          className="absolute right-2 top-2 rounded p-1 text-rose-800 transition hover:bg-rose-100/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+                          aria-label="Editar limites"
+                        >
+                          <Settings className="size-3.5" aria-hidden />
+                        </button>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-rose-900">
+                              Super urgências
+                            </p>
+                            <p className="text-lg font-bold tabular-nums text-rose-700">
+                              {urgencyAvail.superUrgent.used}
+                            </p>
+                          </div>
+                          <span className="shrink-0 text-xs font-medium tabular-nums text-rose-700">
+                            {urgencyAvail.superUrgent.used} /{" "}
+                            {urgencyAvail.superUrgent.limit}
+                          </span>
+                        </div>
+                        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-rose-200">
+                          <div
+                            className="h-full rounded-full bg-rose-500 transition-all duration-300"
+                            style={{
+                              width: `${urgencyAvail.superUrgent.limit > 0 ? Math.min(100, (urgencyAvail.superUrgent.used / urgencyAvail.superUrgent.limit) * 100) : 0}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex min-h-[72px] items-center rounded-xl border-l-4 border-sky-400 bg-sky-50 px-5 py-3 text-center text-[10px] font-medium uppercase tracking-wide text-sky-800 shadow-sm">
+                        Urgências normais indisponíveis
+                      </div>
+                      <div className="relative flex min-h-[72px] items-center rounded-xl border-l-4 border-rose-400 bg-rose-50 px-5 py-3 pr-10 text-center text-[10px] font-medium uppercase tracking-wide text-rose-800 shadow-sm">
+                        <button
+                          type="button"
+                          onClick={() => setConfigModalOpen(true)}
+                          className="absolute right-2 top-2 rounded p-1 text-rose-800 transition hover:bg-rose-100/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+                          aria-label="Editar limites"
+                        >
+                          <Settings className="size-3.5" aria-hidden />
+                        </button>
+                        Super urgências indisponíveis
+                      </div>
+                    </>
+                  )}
+                </div>
+              </section>
+            </div>
+          )}
+
+          {!loading && pendingUrgencyOrders.length > 0 && (
+            <section className="card-alert-amber">
               <h2 className="font-heading text-lg font-semibold text-slate-900">
-                Todos os pedidos
+                Aprovação de urgências
               </h2>
               <p className="mt-1 text-sm text-slate-600">
-                Filtre por clínica, paciente, estado e tipo de trabalho.
+                Pedidos à espera de decisão sobre o nível de urgência.
               </p>
+              <ul className="mt-4 grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
+                {pendingUrgencyOrders.map((o) => {
+                  const busy = urgencyActionId === o.id;
+                  return (
+                    <li key={o.id} className="card-pending-item">
+                      <div className="flex flex-col gap-2 text-sm">
+                        <p className="font-semibold text-zinc-900">
+                          {o.clinic.name}
+                        </p>
+                        <p className="text-zinc-700">
+                          <span className="text-zinc-500">Paciente: </span>
+                          {o.patientName?.trim() || "—"}
+                        </p>
+                        <p className="text-zinc-700">
+                          <span className="text-zinc-500">Trabalho: </span>
+                          {WORK_TYPE_LABELS[o.workType]}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-zinc-500">Urgência:</span>
+                          <UrgencyBadge level={o.urgencyLevel} />
+                        </div>
+                        <p className="text-zinc-700">
+                          <span className="text-zinc-500">
+                            Entrega prevista:{" "}
+                          </span>
+                          {formatExpectedDelivery(o.expectedDeliveryAt)}
+                        </p>
+                        <p className="text-zinc-600">
+                          <span className="text-zinc-500">Pedido em: </span>
+                          {formatDateTime(o.requestedAt)}
+                        </p>
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void handleApproveUrgency(o.id)}
+                          className="inline-flex flex-1 items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50 sm:flex-none"
+                        >
+                          Aprovar
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => setRejectConfirmId(o.id)}
+                          className="inline-flex flex-1 items-center justify-center rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-red-700 disabled:opacity-50 sm:flex-none"
+                        >
+                          Rejeitar
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
 
-              <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end">
-                <div className="min-w-[180px] flex-1">
-                  <label
-                    htmlFor="filter-clinic"
-                    className="block text-xs font-medium text-zinc-600"
-                  >
-                    Clínica
-                  </label>
-                  <input
-                    id="filter-clinic"
-                    type="search"
-                    placeholder="Nome da clínica…"
-                    value={filterClinic}
-                    onChange={(e) => setFilterClinic(e.target.value)}
-                    className="input-dashboard mt-1 w-full"
-                  />
-                </div>
-                <div className="min-w-[200px] flex-1">
-                  <label
-                    htmlFor="search-patient"
-                    className="block text-xs font-medium text-zinc-600"
-                  >
-                    Paciente
-                  </label>
-                  <input
-                    id="search-patient"
-                    type="search"
-                    placeholder="Pesquisar por nome…"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="input-dashboard mt-1 w-full"
-                  />
-                </div>
-                <div className="w-full min-w-[160px] sm:w-auto">
-                  <label
-                    htmlFor="filter-status"
-                    className="block text-xs font-medium text-zinc-600"
-                  >
-                    Estado
-                  </label>
-                  <select
-                    id="filter-status"
-                    value={filterStatus}
-                    onChange={(e) =>
-                      setFilterStatus((e.target.value as WorkStatus) || "")
-                    }
-                    className="input-dashboard mt-1 w-full"
-                  >
-                    <option value="">Todos</option>
-                    {ALL_STATUSES.map((s) => (
-                      <option key={s} value={s}>
-                        {STATUS_LABELS[s]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="w-full min-w-[180px] sm:w-auto">
-                  <label
-                    htmlFor="filter-work"
-                    className="block text-xs font-medium text-zinc-600"
-                  >
-                    Tipo de trabalho
-                  </label>
-                  <select
-                    id="filter-work"
-                    value={filterWorkType}
-                    onChange={(e) =>
-                      setFilterWorkType((e.target.value as WorkType) || "")
-                    }
-                    className="input-dashboard mt-1 w-full"
-                  >
-                    <option value="">Todos</option>
-                    {ALL_WORK_TYPES.map((w) => (
-                      <option key={w} value={w}>
-                        {WORK_TYPE_LABELS[w]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="w-full min-w-[160px] sm:w-auto">
-                  <label
-                    htmlFor="filter-urgency"
-                    className="block text-xs font-medium text-zinc-600"
-                  >
-                    Urgência
-                  </label>
-                  <select
-                    id="filter-urgency"
-                    value={filterUrgency}
-                    onChange={(e) =>
-                      setFilterUrgency((e.target.value as UrgencyLevel) || "")
-                    }
-                    className="input-dashboard mt-1 w-full"
-                  >
-                    <option value="">Todas</option>
-                    {ALL_URGENCIES.map((u) => (
-                      <option key={u} value={u}>
-                        {URGENCY_LABELS[u]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+          <section className="mt-0 w-full">
+            <div className="flex flex-wrap items-end gap-2 gap-y-2">
+              <div className="min-w-[min(100%,140px)] flex-1 basis-[140px]">
+                <label
+                  htmlFor="filter-clinic"
+                  className="block text-[11px] font-medium text-slate-600"
+                >
+                  Clínica
+                </label>
+                <input
+                  id="filter-clinic"
+                  type="search"
+                  placeholder="Nome…"
+                  value={filterClinic}
+                  onChange={(e) => setFilterClinic(e.target.value)}
+                  className="input-dashboard mt-0.5 w-full py-1.5 text-sm"
+                />
               </div>
+              <div className="min-w-[min(100%,140px)] flex-1 basis-[140px]">
+                <label
+                  htmlFor="search-patient"
+                  className="block text-[11px] font-medium text-slate-600"
+                >
+                  Paciente
+                </label>
+                <input
+                  id="search-patient"
+                  type="search"
+                  placeholder="Nome…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="input-dashboard mt-0.5 w-full py-1.5 text-sm"
+                />
+              </div>
+              <div className="min-w-[min(100%,120px)] flex-1 basis-[120px]">
+                <label
+                  htmlFor="filter-status"
+                  className="block text-[11px] font-medium text-slate-600"
+                >
+                  Estado
+                </label>
+                <select
+                  id="filter-status"
+                  value={filterStatus}
+                  onChange={(e) =>
+                    setFilterStatus((e.target.value as WorkStatus) || "")
+                  }
+                  className="input-dashboard mt-0.5 w-full py-1.5 text-sm"
+                >
+                  <option value="">Todos</option>
+                  {ALL_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {STATUS_LABELS[s]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-[min(100%,140px)] flex-1 basis-[160px]">
+                <label
+                  htmlFor="filter-work"
+                  className="block text-[11px] font-medium text-slate-600"
+                >
+                  Tipo trabalho
+                </label>
+                <select
+                  id="filter-work"
+                  value={filterWorkType}
+                  onChange={(e) =>
+                    setFilterWorkType((e.target.value as WorkType) || "")
+                  }
+                  className="input-dashboard mt-0.5 w-full py-1.5 text-sm"
+                >
+                  <option value="">Todos</option>
+                  {ALL_WORK_TYPES.map((w) => (
+                    <option key={w} value={w}>
+                      {WORK_TYPE_LABELS[w]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-[min(100%,120px)] flex-1 basis-[120px]">
+                <label
+                  htmlFor="filter-urgency"
+                  className="block text-[11px] font-medium text-slate-600"
+                >
+                  Urgência
+                </label>
+                <select
+                  id="filter-urgency"
+                  value={filterUrgency}
+                  onChange={(e) =>
+                    setFilterUrgency((e.target.value as UrgencyLevel) || "")
+                  }
+                  className="input-dashboard mt-0.5 w-full py-1.5 text-sm"
+                >
+                  <option value="">Todas</option>
+                  {ALL_URGENCIES.map((u) => (
+                    <option key={u} value={u}>
+                      {URGENCY_LABELS[u]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-              {loading ? (
-                <div className="mt-6">
-                  <TableSkeleton />
-                </div>
-              ) : orders.length === 0 && error ? (
-                <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-600">
-                  Não foi possível mostrar a lista. Utilize &quot;Tentar
-                  novamente&quot; acima.
-                </div>
-              ) : orders.length === 0 ? (
-                <div className="card-panel-soft mt-8 border-dashed border-slate-300 px-6 py-16 text-center">
-                  <p className="font-heading text-lg font-medium text-slate-900">
-                    Sem pedidos no sistema
+            {loading ? (
+              <div className="mt-3 w-full">
+                <TableSkeleton />
+              </div>
+            ) : orders.length === 0 && error ? (
+              <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-600">
+                Não foi possível mostrar a lista. Utilize &quot;Tentar
+                novamente&quot; acima.
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="card-panel-soft mt-3 border-dashed border-slate-300 px-6 py-16 text-center">
+                <p className="font-heading text-lg font-medium text-slate-900">
+                  Sem pedidos no sistema
+                </p>
+                <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
+                  Quando as clínicas criarem pedidos, aparecerão aqui.
+                </p>
+              </div>
+            ) : (
+              <div className="card-panel-soft mt-3 w-full overflow-hidden p-0">
+                <div className="border-b border-slate-200 bg-slate-50/90 px-4 py-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    Todos os pedidos
                   </p>
-                  <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
-                    Quando as clínicas criarem pedidos, aparecerão aqui.
-                  </p>
                 </div>
-              ) : (
-                <div className="card-table-wrap mt-6">
+                <div className="w-full overflow-x-auto">
                   <table className="min-w-[1040px] w-full text-left text-sm">
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-600">
@@ -813,50 +1048,9 @@ export default function AdminDashboardPage() {
                     </tbody>
                   </table>
                 </div>
-              )}
-            </section>
-          </div>
-
-          <aside className="w-full shrink-0 lg:w-72">
-            {loading ? (
-              <div className="card-stat-skeleton animate-pulse">
-                <div className="h-4 w-40 rounded bg-zinc-200" />
-                <div className="mt-4 h-4 w-full rounded bg-zinc-100" />
-                <div className="mt-2 h-4 w-full rounded bg-zinc-100" />
-                <div className="mt-4 h-9 w-full rounded bg-zinc-200" />
-              </div>
-            ) : urgencyAvail ? (
-              <div className="card-panel-soft">
-                <h3 className="font-heading text-sm font-semibold text-slate-900">
-                  Capacidade de urgências (hoje)
-                </h3>
-                <p className="mt-3 text-sm text-zinc-700">
-                  Urgências normais:{" "}
-                  <span className="font-semibold tabular-nums text-zinc-900">
-                    {urgencyAvail.urgent.used} / {urgencyAvail.urgent.limit}
-                  </span>
-                </p>
-                <p className="mt-2 text-sm text-zinc-700">
-                  Super urgências:{" "}
-                  <span className="font-semibold tabular-nums text-zinc-900">
-                    {urgencyAvail.superUrgent.used} /{" "}
-                    {urgencyAvail.superUrgent.limit}
-                  </span>
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setConfigModalOpen(true)}
-                  className="mt-4 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-100"
-                >
-                  Editar limites
-                </button>
-              </div>
-            ) : (
-              <div className="card-panel-soft border-slate-200 bg-slate-50 text-sm text-slate-600">
-                Não foi possível carregar a capacidade de urgências.
               </div>
             )}
-          </aside>
+          </section>
         </div>
       </main>
 

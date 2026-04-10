@@ -5,6 +5,7 @@ import { dashboardPathForRole } from "@/lib/auth-roles";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase-server";
 
+/** Admin route shell: sidebar chrome (collapsible, persisted) lives in {@link AdminDashboardShell}. */
 export default async function AdminLayout({
   children,
 }: {

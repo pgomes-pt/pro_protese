@@ -2,6 +2,8 @@
 
 import {
   Building2,
+  ChevronLeft,
+  ChevronRight,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -12,6 +14,8 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+
+const STORAGE_KEY = "sidebar-collapsed";
 
 const nav = [
   { href: "/admin", label: "Painel", icon: LayoutDashboard, badge: true },
@@ -35,6 +39,215 @@ type UrgencyApi = {
   pendingUrgencyApprovals?: number;
 };
 
+function SidebarNavLinks({
+  pathname,
+  collapsed,
+  pendingUrgency,
+  navClassName = "px-2",
+}: {
+  pathname: string;
+  collapsed: boolean;
+  pendingUrgency: number | null;
+  navClassName?: string;
+}) {
+  return (
+    <nav className={`flex flex-1 flex-col gap-1 py-4 ${navClassName}`}>
+      {nav.map(({ href, label, icon: Icon, badge }) => {
+        const active = navActive(pathname, href);
+        const showBadge =
+          badge &&
+          pendingUrgency !== null &&
+          pendingUrgency > 0 &&
+          href === "/admin";
+        return (
+          <Link
+            key={href}
+            href={href}
+            title={collapsed ? label : undefined}
+            className={`group relative flex items-center gap-3 rounded-xl py-2.5 text-sm font-medium transition-all duration-200 ${
+              collapsed ? "justify-center px-2" : "px-3"
+            } ${
+              active
+                ? "bg-blue-600 text-white shadow-md shadow-blue-900/40"
+                : "text-slate-400 hover:bg-white/5 hover:text-blue-300"
+            }`}
+          >
+            <span className="relative inline-flex shrink-0">
+              <Icon
+                className={`size-[18px] transition-transform duration-200 ${
+                  active ? "text-white" : "text-slate-500 group-hover:text-blue-300"
+                }`}
+                aria-hidden
+              />
+              {collapsed && showBadge ? (
+                <span
+                  className="absolute -right-1 -top-1 size-2 rounded-full bg-red-500 shadow-sm animate-badge-pulse"
+                  aria-hidden
+                />
+              ) : null}
+            </span>
+            {!collapsed ? (
+              <>
+                <span className="font-heading flex-1">{label}</span>
+                {showBadge ? (
+                  <span
+                    className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm animate-badge-pulse"
+                    title="Urgências por aprovar"
+                  >
+                    {pendingUrgency! > 99 ? "99+" : pendingUrgency}
+                  </span>
+                ) : null}
+              </>
+            ) : null}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+function SidebarFooter({
+  collapsed,
+  userName,
+  userEmail,
+}: {
+  collapsed: boolean;
+  userName: string;
+  userEmail: string;
+}) {
+  return (
+    <div className="border-t border-white/10 px-2 py-4">
+      {!collapsed ? (
+        <div className="mb-3 rounded-xl bg-white/5 px-3 py-2.5 ring-1 ring-white/10">
+          <p className="truncate text-xs font-medium text-white">{userName}</p>
+          <p className="truncate text-[11px] text-slate-500">{userEmail}</p>
+        </div>
+      ) : null}
+      <a
+        href="/api/auth/logout"
+        title="Sair"
+        className={`flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 text-sm font-medium text-slate-300 transition hover:border-red-400/30 hover:bg-red-950/30 hover:text-red-200 ${
+          collapsed ? "px-2 py-2.5" : "px-3 py-2.5"
+        }`}
+      >
+        <LogOut className="size-4 shrink-0" aria-hidden />
+        {!collapsed ? "Sair" : null}
+      </a>
+    </div>
+  );
+}
+
+function SidebarChrome({
+  collapsed,
+  onToggle,
+  pathname,
+  pendingUrgency,
+  userName,
+  userEmail,
+}: {
+  collapsed: boolean;
+  onToggle: () => void;
+  pathname: string;
+  pendingUrgency: number | null;
+  userName: string;
+  userEmail: string;
+}) {
+  return (
+    <>
+      <div className="relative border-b border-white/10 px-2 py-3">
+        <div
+          className={`flex items-center gap-2 ${collapsed ? "justify-center" : "justify-between"}`}
+        >
+          {!collapsed ? (
+            <div className="flex min-w-0 flex-1 items-start gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-600/20 ring-1 ring-blue-400/30">
+                <Sparkles className="size-5 text-blue-300" aria-hidden />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-heading text-sm font-semibold leading-tight text-white">
+                  Pro Prótese
+                </p>
+                <p className="mt-1 text-[11px] font-medium uppercase tracking-wider text-slate-500">
+                  Administração
+                </p>
+              </div>
+            </div>
+          ) : null}
+          <button
+            type="button"
+            onClick={onToggle}
+            className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-300 transition hover:bg-white/10 hover:text-white"
+            aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+            title={collapsed ? "Expandir menu" : "Recolher menu"}
+          >
+            {collapsed ? (
+              <ChevronRight className="size-5" aria-hidden />
+            ) : (
+              <ChevronLeft className="size-5" aria-hidden />
+            )}
+          </button>
+        </div>
+      </div>
+
+      <SidebarNavLinks
+        pathname={pathname}
+        collapsed={collapsed}
+        pendingUrgency={pendingUrgency}
+        navClassName="px-2"
+      />
+
+      <SidebarFooter
+        collapsed={collapsed}
+        userName={userName}
+        userEmail={userEmail}
+      />
+    </>
+  );
+}
+
+function MobileSidebarChrome({
+  pathname,
+  pendingUrgency,
+  userName,
+  userEmail,
+}: {
+  pathname: string;
+  pendingUrgency: number | null;
+  userName: string;
+  userEmail: string;
+}) {
+  return (
+    <>
+      <div className="relative border-b border-white/10 px-4 py-5">
+        <div className="flex items-start gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-600/20 ring-1 ring-blue-400/30">
+            <Sparkles className="size-5 text-blue-300" aria-hidden />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-heading text-sm font-semibold leading-tight text-white">
+              Pro Prótese
+            </p>
+            <p className="mt-1 text-[11px] font-medium uppercase tracking-wider text-slate-500">
+              Administração
+            </p>
+          </div>
+        </div>
+      </div>
+      <SidebarNavLinks
+        pathname={pathname}
+        collapsed={false}
+        pendingUrgency={pendingUrgency}
+        navClassName="px-3"
+      />
+      <SidebarFooter
+        collapsed={false}
+        userName={userName}
+        userEmail={userEmail}
+      />
+    </>
+  );
+}
+
 export function AdminDashboardShell({
   userName,
   userEmail,
@@ -46,7 +259,30 @@ export function AdminDashboardShell({
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [pendingUrgency, setPendingUrgency] = useState<number | null>(null);
+
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        setCollapsed(localStorage.getItem(STORAGE_KEY) === "true");
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(STORAGE_KEY, String(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }, []);
 
   const loadUrgency = useCallback(async () => {
     try {
@@ -76,98 +312,46 @@ export function AdminDashboardShell({
     setMobileOpen(false);
   }, [pathname]);
 
-  const sidebarInner = (
+  const sidebarWidthClass = collapsed ? "lg:w-16" : "lg:w-[260px]";
+  const mainMarginClass = collapsed ? "lg:ml-16" : "lg:ml-[260px]";
+
+  const bgLayers = (
     <>
-      <div className="relative border-b border-white/10 px-4 py-5">
-        <div className="flex items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-600/20 ring-1 ring-blue-400/30">
-            <Sparkles className="size-5 text-blue-300" aria-hidden />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="font-heading text-sm font-semibold leading-tight text-white">
-              Pro Prótese
-            </p>
-            <p className="mt-1 text-[11px] font-medium uppercase tracking-wider text-slate-500">
-              Administração
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
-        {nav.map(({ href, label, icon: Icon, badge }) => {
-          const active = navActive(pathname, href);
-          const showBadge =
-            badge &&
-            pendingUrgency !== null &&
-            pendingUrgency > 0 &&
-            href === "/admin";
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
-                active
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-900/40"
-                  : "text-slate-400 hover:bg-white/5 hover:text-blue-300"
-              }`}
-            >
-              <Icon
-                className={`size-[18px] shrink-0 transition-transform duration-200 ${
-                  active ? "text-white" : "text-slate-500 group-hover:text-blue-300"
-                }`}
-                aria-hidden
-              />
-              <span className="font-heading flex-1">{label}</span>
-              {showBadge ? (
-                <span
-                  className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm animate-badge-pulse"
-                  title="Urgências por aprovar"
-                >
-                  {pendingUrgency > 99 ? "99+" : pendingUrgency}
-                </span>
-              ) : null}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="border-t border-white/10 px-4 py-4">
-        <div className="mb-3 rounded-xl bg-white/5 px-3 py-2.5 ring-1 ring-white/10">
-          <p className="truncate text-xs font-medium text-white">{userName}</p>
-          <p className="truncate text-[11px] text-slate-500">{userEmail}</p>
-        </div>
-        <a
-          href="/api/auth/logout"
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:border-red-400/30 hover:bg-red-950/30 hover:text-red-200"
-        >
-          <LogOut className="size-4" aria-hidden />
-          Sair
-        </a>
-      </div>
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.45]"
+        style={{
+          backgroundImage: `radial-gradient(ellipse 120% 80% at 20% 0%, rgba(37, 99, 235, 0.12) 0%, transparent 55%),
+                linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, #1e293b 100%)`,
+        }}
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.07]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+        }}
+        aria-hidden
+      />
     </>
   );
 
   return (
     <div className="min-h-screen bg-white">
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:flex lg:w-[260px] lg:flex-col">
-        <div className="relative flex h-full flex-col overflow-hidden border-r border-slate-800/80 bg-[#0f172a] shadow-2xl shadow-black/40">
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.45]"
-            style={{
-              backgroundImage: `radial-gradient(ellipse 120% 80% at 20% 0%, rgba(37, 99, 235, 0.12) 0%, transparent 55%),
-                linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, #1e293b 100%)`,
-            }}
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.07]"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-            }}
-            aria-hidden
-          />
-          <div className="relative flex min-h-0 flex-1 flex-col">{sidebarInner}</div>
+      <aside
+        className={`hidden overflow-hidden transition-all duration-300 lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:flex lg:flex-col ${sidebarWidthClass}`}
+      >
+        <div className="relative flex h-full min-w-0 flex-col overflow-hidden border-r border-slate-800/80 bg-[#0f172a] shadow-2xl shadow-black/40">
+          {bgLayers}
+          <div className="relative flex min-h-0 flex-1 flex-col">
+            <SidebarChrome
+              collapsed={collapsed}
+              onToggle={toggleCollapsed}
+              pathname={pathname}
+              pendingUrgency={pendingUrgency}
+              userName={userName}
+              userEmail={userEmail}
+            />
+          </div>
         </div>
       </aside>
 
@@ -213,19 +397,21 @@ export function AdminDashboardShell({
         }`}
       >
         <div className="relative flex h-full flex-col overflow-hidden">
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.45]"
-            style={{
-              backgroundImage: `radial-gradient(ellipse 120% 80% at 20% 0%, rgba(37, 99, 235, 0.12) 0%, transparent 55%),
-                linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, #1e293b 100%)`,
-            }}
-            aria-hidden
-          />
-          <div className="relative flex min-h-0 flex-1 flex-col">{sidebarInner}</div>
+          {bgLayers}
+          <div className="relative flex min-h-0 flex-1 flex-col">
+            <MobileSidebarChrome
+              pathname={pathname}
+              pendingUrgency={pendingUrgency}
+              userName={userName}
+              userEmail={userEmail}
+            />
+          </div>
         </div>
       </aside>
 
-      <main className="min-h-[calc(100vh-57px)] bg-white lg:ml-[260px] lg:min-h-screen">
+      <main
+        className={`min-h-[calc(100vh-57px)] bg-white transition-all duration-300 lg:min-h-screen ${mainMarginClass}`}
+      >
         <div className="animate-fade-in">{children}</div>
       </main>
     </div>
