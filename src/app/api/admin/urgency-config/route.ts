@@ -15,6 +15,40 @@ function parseNonNegativeInt(value: unknown): number | null {
   return value;
 }
 
+function parseNonNegativeFloat(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  if (value < 0) return null;
+  return value;
+}
+
+export async function GET() {
+  const auth = await authenticateRequest();
+  if (!auth.ok) {
+    return jsonError(auth.status, auth.message);
+  }
+  if (auth.dbUser.role !== UserRole.ADMIN) {
+    return jsonError(403, "Apenas administradores podem consultar a configuração de urgências.");
+  }
+
+  try {
+    const row = await prisma.urgencyConfig.findFirst({
+      orderBy: { updatedAt: "desc" },
+    });
+    if (!row) {
+      return NextResponse.json({
+        maxDailyUrgent: 10,
+        maxDailySuperUrgent: 5,
+        surchargePercent: 60,
+        surchargeMinValue: null as number | null,
+      });
+    }
+    return NextResponse.json(row);
+  } catch (e) {
+    console.error(e);
+    return jsonError(500, "Erro ao carregar a configuração de urgências.");
+  }
+}
+
 export async function PATCH(request: NextRequest) {
   const auth = await authenticateRequest();
   if (!auth.ok) {
@@ -41,6 +75,15 @@ export async function PATCH(request: NextRequest) {
     return jsonError(400, "maxDailySuperUrgent deve ser um número inteiro ≥ 0.");
   }
 
+  let surchargePercent: number | undefined;
+  if (body.surchargePercent !== undefined) {
+    const p = parseNonNegativeFloat(body.surchargePercent);
+    if (p === null) {
+      return jsonError(400, "surchargePercent deve ser um número ≥ 0.");
+    }
+    surchargePercent = p;
+  }
+
   try {
     const existing = await prisma.urgencyConfig.findFirst({
       orderBy: { updatedAt: "desc" },
@@ -49,10 +92,18 @@ export async function PATCH(request: NextRequest) {
     const updated = existing
       ? await prisma.urgencyConfig.update({
           where: { id: existing.id },
-          data: { maxDailyUrgent, maxDailySuperUrgent },
+          data: {
+            maxDailyUrgent,
+            maxDailySuperUrgent,
+            ...(surchargePercent !== undefined ? { surchargePercent } : {}),
+          },
         })
       : await prisma.urgencyConfig.create({
-          data: { maxDailyUrgent, maxDailySuperUrgent },
+          data: {
+            maxDailyUrgent,
+            maxDailySuperUrgent,
+            surchargePercent: surchargePercent ?? 60,
+          },
         });
 
     return NextResponse.json(updated);

@@ -20,6 +20,7 @@ import {
   type ReactNode,
 } from "react";
 import { getExpectedDeliveryWindow } from "@/lib/dates";
+import { AdminCapacityWidget } from "@/components/admin-capacity-widget";
 import {
   STATUS_LABELS,
   URGENCY_LABELS,
@@ -538,12 +539,13 @@ export default function AdminDashboardPage() {
               <UrgencyRowSkeleton />
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
-              <section className="flex min-w-0 flex-row flex-wrap items-center gap-3 sm:gap-4">
-                <span className="shrink-0 text-xs font-semibold uppercase tracking-widest text-slate-400">
-                  Operações
-                </span>
-                <div className="min-w-0 w-full flex-1 basis-full rounded-xl bg-white px-6 py-4 shadow-sm sm:basis-0">
+            <>
+              <div className="flex flex-col gap-3">
+                <section className="flex min-w-0 flex-row flex-wrap items-center gap-3 sm:gap-4">
+                  <span className="shrink-0 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                    Operações
+                  </span>
+                  <div className="min-w-0 w-full flex-1 basis-full rounded-xl bg-white px-6 py-4 shadow-sm sm:basis-0">
                   <div className="flex min-w-0 items-center justify-center gap-6 overflow-x-auto">
                     <button
                       type="button"
@@ -763,7 +765,9 @@ export default function AdminDashboardPage() {
                   )}
                 </div>
               </section>
-            </div>
+              </div>
+              <AdminCapacityWidget />
+            </>
           )}
 
           {!loading && pendingUrgencyOrders.length > 0 && (
